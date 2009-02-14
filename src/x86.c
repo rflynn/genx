@@ -97,7 +97,7 @@ const const char * disp_modrm(u8 n, const u8 modrm, char *buf, size_t len)
  */
 const struct x86 X86[X86_COUNT] = {
   /* function op */
-  /* descr                        opcode                    oplen,modrmlen,modrm,imm */
+  /* descr                        opcode              oplen,modrmlen,modrm,imm */
   { "enter"                   , { 0xc8, 0x00, 0, 0 }, 4, 0, 0, 0 }, /*       ENTER   imm16, 0           */
   { "mov     0x8(%%ebp),  %%eax",{0x8b, 0x45, 8    }, 3, 0, 0, 0 }, /* /r    MOV     r32,   r/m32       */
   /* function suffix */
@@ -166,6 +166,68 @@ const struct x86 X86[X86_COUNT] = {
   { "cmovpo "                 , { 0x0f, 0x4b       }, 2, 1, 0, 0 }, /* /r    CMOVPO  r32,   r/m32       */
   { "cmovs  "                 , { 0x0f, 0x48       }, 2, 1, 0, 0 }, /* /r    CMOVS   r32,   r/m32       */
   { "cmovz  "                 , { 0x0f, 0x44       }, 2, 1, 0, 0 }, /* /r    CMOVZ   r32,   r/m32       */
+
+#if X86_FLOAT
+
+/*
+ * x86 floating point operations
+ */
+
+  /* descr                        opcode              oplen,modrmlen,modrm,imm */
+  //{ "fild   "                 , { 0xdb             }, 1, 1, 0, 0 }, /* /r    CMOVZ   r32,   r/m32       */
+/*
+DB /0 FILD m32int Push m32int onto the FPU register stack.
+
+DB /2 FIST m32int Store ST(0) in m32int.
+DB /3 FISTP m32int Store ST(0) in m32int and pop register stack.
+
+DD /2 FST m64fp Copy ST(0) to m64fp.
+DD D0+i FST ST(i) Copy ST(0) to ST(i).
+D9 /3 FSTP m32fp Copy ST(0) to m32fp and pop register stack.
+DD D8+i FSTP ST(i) Copy ST(0) to ST(i) and pop register stack.
+
+DD /0 FLD m64fp Push m64fp onto the FPU register stack.
+DB /5 FLD m80fp Push m80fp onto the FPU register stack.
+D9 C0+i FLD ST(i) Push ST(i) onto the FPU register stack.
+
+D9 E8 FLD1 Push +1.0 onto the FPU register stack.
+D9 E9 FLDL2T Push log210 onto the FPU register stack.
+D9 EA FLDL2E Push log2e onto the FPU register stack.
+D9 EB FLDPI Push Pi onto the FPU register stack.
+D9 EC FLDLG2 Push log102 onto the FPU register stack.
+D9 ED FLDLN2 Push loge2 onto the FPU register stack.
+D9 EE FLDZ Push +0.0 onto the FPU register stack.
+
+D9 FD FSCALE Scale ST(0) by ST(1).
+
+D8 /1 FMUL m32fp Multiply ST(0) by m32fp and store result in ST(0).
+D8 C8+i FMUL ST(0), ST(i) Multiply ST(0) by ST(i) and store result in ST(0).
+DC C8+i FMUL ST(i), ST(0) Multiply ST(i) by ST(0) and store result in ST(i).
+DE C8+i FMULP ST(i), ST(0) Multiply ST(i) by ST(0), store result in ST(i), and pop the register stack.
+DE C9 FMULP Multiply ST(1) by ST(0), store result in ST(1), and pop the register stack.
+DA /1 FIMUL m32int Multiply ST(0) by m32int and store result in ST(0).
+
+D9 E1 FABS Replace ST with its absolute value.
+
+DC /0 FADD m64fp Add m64fp to ST(0) and store result in ST(0).
+D8 C0+i FADD ST(0), ST(i) Add ST(0) to ST(i) and store result in ST(0).
+DC C0+i FADD ST(i), ST(0) Add ST(i) to ST(0) and store result in ST(i).
+DE C0+i FADDP ST(i), ST(0) Add ST(0) to ST(i), store result in ST(i), and pop the register stack.
+DE C1 FADDP Add ST(0) to ST(1), store result in ST(1), and pop the register stack.
+DA /0 FIADD m32int Add m32int to ST(0) and store result in ST(0).
+
+D9 FE FSIN Replace ST(0) with its sine.
+
+D9 FB FSINCOS Compute the sine and cosine of ST(0); replace ST(0) with the sine, and push the cosine onto the register stack.
+
+D9 FA FSQRT Computes square root of ST(0) and stores the result in ST(0).
+
+D9 FF FCOS Replace ST(0) with its cosine.
+
+*/
+
+#endif
+
 #if 0 /* crash, why? */
   { "popcnt"                 , { 0xf3, 0x0f, 0xb8  }, 3, 1, 0, 0 }, /* /r    POPCNT  r32,   r/m32       */
 #endif
