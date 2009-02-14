@@ -1,0 +1,40 @@
+# ex: set ff=dos ts=2 et:
+# $Id$
+
+Implementation of a genetic algorithm finder and an x86 machine code generator.
+
+Why is this interesting?
+
+  Typically software development involves humans writing a function to
+  generate output from input.
+
+  Genetic algorithms take input and output data and try to write a function
+  to map between them; thus it is a sort of automated reverse engineering,
+  allowing us to discover the relationship between sets of data.
+
+  This implementation expresses its candidate "creature" functions in raw
+  x86 machine code, which means evaluation of them is extremely fast, many
+  orders of magnitude faster than generating Lisp, C or some higher level
+  language. Genetic algorithm is highly CPU-intensive and any gain in
+  efficiency translates productivity-wise in a linear fashion.
+
+Works approximately like so:
+
+ generate population of N random x86 machine code functions (creatures)
+ do
+   execute creature against target data
+   calculate the aggregate difference between creature's output vs. target output
+   keep best creatures
+   re-generate population of N random x86 machine code functions (creatures)
+     possibly mutate new creatures with "best" creatures from previous population
+ while we haven't found a succinct, perfect match
+
+ Suggested use:
+   gcc -lm -O3 -o execbytes execbytes.c  # compile
+   ./execbytes                           # run
+   sudo renice +19 $(pgrep execbytes)    # in another terminal to be nice
+
+NOTE: the x86 ops used are all controlled and "safe", meaning they only
+      operate on eax, ebx, ecx, edx registers. this isn't going to blow anything
+      up.
+

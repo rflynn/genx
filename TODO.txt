@@ -1,0 +1,34 @@
+# ex: set ff=dos ts=2 et:
+# $Id$
+
+TODO:
+
+  start using some sort of project managing tool for TODO stuff(!)
+
+ the file is getting too large and cluttered; split it into:
+   rnd.c - random functions
+   x86.c - all x86 machine-code related functions
+   gen.c - genotype-related
+   evo.c - evolution algorithms
+
+ add support for cmdline options
+
+ add support for the saving/retrieval of jobs, which will allow tasks to be
+ resumed if the program crashes, and would even allow the transfer of jobs
+ between machines.
+
+ add support for floating point operations; we may need separate x86 gen
+ functions and/or a tabularized structure. consider how to implement an
+ interface that allows for different datatypes to be used (consider memory-based
+ ones as well)
+
+ define a proper interface so we can lib-ize the evolution/x86 part and can
+ separate the "problem" we are trying to solve into a separate program.
+
+ implement a "simplify" function. this would identify effectless or redundant
+ operations, such as performing some operations more than once in a row, and
+ reduce them to canonical, equivalent operations
+   
+   hmm not so sure about this anymore, the overhead for doing it in every function
+   would be far too great; but perhaps we could still apply it to our results
+
