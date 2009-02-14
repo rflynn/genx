@@ -38,5 +38,15 @@ Running
   memory-based records... you'll just have to wait, sorry :/ genx is
   very immature still, although floating point support shouldn't be
   too long off
+
+  and of course:
+
+    ./genx
+
+  I'd also suggest a subsequent:
+
+    sudo renice +19 $(pgrep genx)
+
+  since it'll make your other processes happy.
   
 

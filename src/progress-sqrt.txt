@@ -1,0 +1,50 @@
+
+GENERATION  3893  255197184 genotypes @Sat Feb 14 03:54:20 2009
+ 0 c8 00 00 00                     enter
+ 1 8b 45 08                        mov     0x8(%ebp),  %eax
+ 2 c1 e0 6d                        shl     0x6d, %eax
+ 3 c1 d0 b3                        rol     0xb3, %edx, %eax
+ 4 0f 46 d8                        cmovbe  %ebx, %eax
+ 5 0f af db                        imul    %ebx, %ebx
+ 6 0f 43 ca                        cmovnc  %ecx, %edx
+ 7 81 e3 e2 ea 00 00               and     0x0000eae2, %ebx
+ 8 0f bb c3                        btc     %eax, %ebx
+ 9 0f c1 db                        xadd    %ebx, %ebx
+10 0f 4b c2                        cmovnp  %eax, %edx
+11 6b c3 56                        imul    0x56, %eax, %ebx
+12 c1 db 42                        rcr     0x42, %ebx
+13 0f 4a d9                        cmovp   %ebx, %ecx
+14 83 d0 b7                        add     0xb7, %edx, %eax
+15 f7 d1                           not     %ecx
+16 0f af db                        imul    %ebx, %ebx
+17 0b c3                           or      %eax, %ebx
+18 39 c9                           cmp     %ecx, %ecx
+19 0f ba f9 17                     btc     0x17, %ecx
+20 c1 e8 c6                        shr     0xc6, %eax
+21 c9                              leave
+22 c3                              ret
+score=323
+         in      target      actual        diff     diffsum
+----------- ----------- ----------- ----------- -----------
+          0           0           1           1           1
+          7           2           1           1           2
+         21           4           4           0           2
+         49           7           4           3           5
+        105          10           9           1           6
+        217          14           9           5          11
+        441          21          20           1          12
+        889          29          20           9          21
+       1785          42          41           1          22
+       3577          59          41          18          40
+       7161          84          84           0          40
+      14329         119          84          35          75
+      28665         169         186          17          92
+      57337         239         256          17         109
+     114681         338         342           4         113
+     229369         478         492          14         127
+     458745         677         686           9         136
+     917497         957         986          29         165
+    1835001        1354        1374          20         185
+    3670009        1915        1818          97         282
+    7340025        2709        2750          41         323
+

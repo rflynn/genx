@@ -236,7 +236,7 @@ int main(int argc, char *argv[])
     generation++;
     gen_since_best++;
   } while (
-    (0 != Pop.indiv[0].score || 1 != gen_since_best) /* perfect match */
+    0 != CurrBest.score /* perfect match */
     /* favor shorter solutions even after perfect match found */
     || FUNC_PREFIX_LEN + FUNC_SUFFIX_LEN + 1 != Pop.indiv[0].geno.len
   );

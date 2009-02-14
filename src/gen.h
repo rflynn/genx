@@ -44,5 +44,17 @@ void pop_gen(struct pop *p,
 
 void pop_score(struct pop *p);
 
+/* populate prefix */
+#define GEN_PREFIX(g) do {              \
+    (g)->chromo[0].x86 = ENTER;         \
+    (g)->chromo[1].x86 = MOV_8_EBP_EAX; \
+  } while (0)
+
+/* populate genotype suffix */
+#define GEN_SUFFIX(g) do {              \
+  (g)->chromo[(g)->len++].x86 = LEAVE;  \
+  (g)->chromo[(g)->len++].x86 = RET;    \
+  } while (0)
+
 #endif
 

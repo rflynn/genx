@@ -6,10 +6,18 @@
  * Released under the MIT License, see the "LICENSE.txt" file or
  *   <URL: http://www.opensource.org/licenses/mit-license.php>
  */
+/*
+ * References:
+ *  #1 Intel 64 and IA-32 Architectures Software Developer's Manual
+ *     Volume 2A: Instruction Set Reference, A-M
+ *  #2 Intel 64 and IA-32 Architectures Software Developer's Manual
+ *     Volume 2N: Instruction Set Reference, N-Z
+ */
 
 #ifndef X86_H
 #define X86_H
 
+#include <stddef.h>
 #include "typ.h"
 #include "gen.h"
 
@@ -58,6 +66,7 @@ enum {
 #define FUNC_SUFFIX_LEN 2 /* chromosomes always at the end */
   LEAVE,
   RET,
+  /* begin instructions considered for general use with a function body */
 #define X86_FIRST ADD_IMM8
   ADD_IMM8,
   ADD_R32,
@@ -88,7 +97,6 @@ enum {
   CMP_R32,
   CMP_IMM32,
   CMPXCHG_R32,
-  //CRC32_R32,
   RCL_IMM8,
   RCR_IMM8,
   ROL_IMM8,
@@ -122,29 +130,16 @@ enum {
   CMOVPO,
   CMOVS,
   CMOVZ,
-  //POPCNT,
-  //BSWAP_EDX,
-  //IDIV_R32,
 #if 0
-  ADD_EAX,
-  XOR_R32,
+  /* instructions i have tried to add but have failed for one reason or another */
+  POPCNT,
+  BSWAP_EDX,
+  IDIV_R32,
   JE,
   JNZ
 #endif
   X86_COUNT /* last, special */
 };
-
-/* populate prefix */
-#define X86_GEN_PREFIX(g) do {          \
-    (g)->chromo[0].x86 = ENTER;         \
-    (g)->chromo[1].x86 = MOV_8_EBP_EAX; \
-  } while (0)
-
-/* populate genotype suffix */
-#define X86_GEN_SUFFIX(g) do {          \
-  (g)->chromo[(g)->len++].x86 = LEAVE;  \
-  (g)->chromo[(g)->len++].x86 = RET;    \
-  } while (0)
 
 #endif
 

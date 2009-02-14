@@ -66,9 +66,9 @@ static void gen_gen(genotype *dst, const genotype *src,
     /* initial generation */
     dst->len = randr(FUNC_PREFIX_LEN + 1, CHROMO_MAX - FUNC_SUFFIX_LEN);
     chromo_random(dst, FUNC_PREFIX_LEN, dst->len);
-    X86_GEN_PREFIX(dst);
+    GEN_PREFIX(dst);
   }
-  X86_GEN_SUFFIX(dst);
+  GEN_SUFFIX(dst);
 }
 
 void pop_gen(struct pop *p,
