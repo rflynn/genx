@@ -3,32 +3,41 @@
 
 TODO:
 
-  start using some sort of project managing tool for TODO stuff(!)
+ * add support for the saving/retrieval of jobs, which will allow tasks to be
+   resumed if the program crashes, and would even allow the transfer of jobs
+   between machines.
 
- the file is getting too large and cluttered; split it into:
-   rnd.c - random functions
-   x86.c - all x86 machine-code related functions
-   gen.c - genotype-related
-   evo.c - evolution algorithms
+ * define a proper interface so we can lib-ize the evolution/x86 part and can
+   separate the "problem" we are trying to solve into a separate program.
 
- add support for cmdline options
+ * add support for multiple input parameters
 
- add support for the saving/retrieval of jobs, which will allow tasks to be
- resumed if the program crashes, and would even allow the transfer of jobs
- between machines.
+ * add support for some sort of cool visualization output, even if it's silly
+   people are much more likely to be interested if we can at least show them
+   that something is happening
 
- add support for floating point operations; we may need separate x86 gen
- functions and/or a tabularized structure. consider how to implement an
- interface that allows for different datatypes to be used (consider memory-based
- ones as well)
+   this would probably be a component separate from the actual crunching
 
- define a proper interface so we can lib-ize the evolution/x86 part and can
- separate the "problem" we are trying to solve into a separate program.
+ * implement some basic guidance for the function generation:
 
- implement a "simplify" function. this would identify effectless or redundant
- operations, such as performing some operations more than once in a row, and
- reduce them to canonical, equivalent operations
+    * create an enumeration of all possible data storage destinations
+
+    * for each instruction in X86 record which place is read and written
+
+    * while calculating a single function, maintain a running tally of which
+      places have been written to, and only choose from the pool of possible
+      functions which reads operates from one of those places.
+
+    this will increase the cost of generating a single function, but i believe
+    it will produce output of higher quality, and thus reduce the overall time
+    wasted on functions which are complete garbage.
+
+ * implement a "simplify" function. this would identify effectless or redundant
+   operations, such as performing some operations more than once in a row, and
+   reduce them to canonical, equivalent operations
    
-   hmm not so sure about this anymore, the overhead for doing it in every function
-   would be far too great; but perhaps we could still apply it to our results
+     hmm not so sure about this anymore, the overhead for doing it in every
+     function would be far too great; but perhaps we could still apply it to
+     our results
+
 

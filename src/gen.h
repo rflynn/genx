@@ -12,11 +12,11 @@
 
 #include <stdio.h>
 
-#define POP_SIZE       8 * 1024 /* total genotypes in a population generation */
-#define CHROMO_MAX     12       /* maximum chromosomes in a genotype */
-#define MAX_CONST      0xFFFF   /* maximum possible random integer value */
-#define MAX_FLT_CONST  3.0f
-#define MIN_FLT_CONST  0.001f
+#define POP_SIZE        64 * 1024 /* total genotypes in a population generation */
+#define CHROMO_MAX      16        /* maximum chromosomes in a genotype */
+#define MAX_INT_CONST   0xFFFF    /* maximum possible random integer value */
+#define MAX_FLT_CONST   10.f      /* max random floating point val */
+#define MIN_FLT_CONST  -10.f      /* min random floating point val */
 
 struct genotype {
   u32 len;
@@ -50,10 +50,18 @@ void pop_score(struct pop *p);
 #define GEN_PREFIX(g) do {              \
     (g)->chromo[0].x86 = ENTER;         \
     (g)->chromo[1].x86 = FLD;           \
+    (g)->chromo[2].x86 = SUB_14_ESP;    \
   } while (0)
+
+#if 0
+    (g)->chromo[3].x86 = MOV_IMM32_8EBP;\
+    *(u32*)&(g)->chromo[3].data = 0x3fc00000;\
+    (g)->chromo[4].x86 = FLD_8EBP;      
+#endif
 
 /* populate genotype suffix */
 #define GEN_SUFFIX(g) do {              \
+  (g)->chromo[(g)->len++].x86 = ADD_14_ESP; \
   (g)->chromo[(g)->len++].x86 = LEAVE;  \
   (g)->chromo[(g)->len++].x86 = RET;    \
   } while (0)
@@ -143,7 +151,11 @@ struct genx_iface_u32 {
 														 */
 						 float_ops:1,
 						 algebra_ops:1,
-						 bit_ops:1;
+						 bit_ops:1,
+             random_const:1;/*
+                             * Are we allowed to generate random constant values
+                             * or must we stick with only the input given to us?
+                             */
 	} opt;       
 };
 

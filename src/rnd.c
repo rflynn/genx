@@ -101,9 +101,9 @@ u32 randr(u32 min, u32 max)
 
 float randfr(float min, float max)
 {
-  float scaled = rnd32() / 0xFFFFFFFF;
-  float r = min + ((max - min + 1) * scaled);
+  float r = min + ((max - min + 1) * rand01());
   return r;
 }
 
 #endif
+
