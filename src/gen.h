@@ -50,6 +50,18 @@ void pop_gen(struct pop *p,
 
 void pop_score(struct pop *p);
 
+#ifdef X86_USE_FLOAT
+# define GENOSCORE_SCORE(gs)  ((gs)->score.f)
+# define GENOSCORE_MAX        FLT_MAX
+# define GENOSCORE_MIN        FLT_EPSILON
+#else
+# define GENOSCORE_SCORE(gs)  ((gs)->score.i)
+# define GENOSCORE_MAX        INT_MAX
+# define GENOSCORE_MIN        0
+#endif
+
+#define GENOSCORE_MATCH(gs)   (GENOSCORE_SCORE(gs) <= GENOSCORE_MIN)
+
 /*
  * define common op prefix for all functions;
  * required by x86 to set up environment

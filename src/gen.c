@@ -111,7 +111,7 @@ void pop_gen(struct pop *p,
     for (i = keep; i < sizeof p->indiv / sizeof p->indiv[0]; i++) {
       const genotype *src = &p->indiv[randr(0, keep-1)].geno;
       gen_gen(&p->indiv[i].geno, src, cross_rate, mutate_rate);
-      p->indiv[i].score.i = 0;
+      GENOSCORE_SCORE(p->indiv+i) = 0;
     }
   } else {
     /*
@@ -119,7 +119,7 @@ void pop_gen(struct pop *p,
      */
     for (i = keep; i < sizeof p->indiv / sizeof p->indiv[0]; i++) {
       gen_gen(&p->indiv[i].geno, NULL, cross_rate, mutate_rate);
-      p->indiv[i].score.i = 0;
+      GENOSCORE_SCORE(p->indiv+i) = 0;
     }
   }
 }
@@ -202,11 +202,8 @@ int genoscore_cmp(const void *va, const void *vb)
 {
   const genoscore *a = va,
                   *b = vb;
-#ifdef X86_USE_FLOAT
-  return (a->score.f > b->score.f) - (a->score.f < b->score.f);
-#else
-  return (a->score.i > b->score.i) - (a->score.i < b->score.i);
-#endif
+  return (GENOSCORE_SCORE(a) > GENOSCORE_SCORE(b))
+       - (GENOSCORE_SCORE(a) < GENOSCORE_SCORE(b));
 }
 
 /**
@@ -216,15 +213,10 @@ int genoscore_lencmp(const void *va, const void *vb)
 {
   const genoscore *a = va,
                   *b = vb;
-#ifdef X86_USE_FLOAT
-  if (a->score.f == b->score.f) 
+  if (GENOSCORE_SCORE(a) == GENOSCORE_SCORE(b))
     return (a->geno.len > b->geno.len) - (a->geno.len < b->geno.len);
-  return (a->score.f > b->score.f) - (a->score.f < b->score.f);
-#else
-  if (a->score.i == b->score.i) 
-    return (a->geno.len > b->geno.len) - (a->geno.len < b->geno.len);
-  return (a->score.i > b->score.i) - (a->score.i < b->score.i);
-#endif
+  return (GENOSCORE_SCORE(a) > GENOSCORE_SCORE(b))
+       - (GENOSCORE_SCORE(a) < GENOSCORE_SCORE(b));
 }
 
 void pop_score(struct pop *p)
@@ -237,7 +229,7 @@ void pop_score(struct pop *p)
       x86_dump(x86, x86len, stdout);
     if (Dump > 1)
       (void)gen_dump(&p->indiv[i].geno, stdout);
-    p->indiv[i].score.f = score(x86, 0);
+    GENOSCORE_SCORE(&p->indiv[i]) = score(x86, 0);
   }
   qsort(p->indiv, sizeof p->indiv / sizeof p->indiv[0],
                                     sizeof p->indiv[0], genoscore_cmp);

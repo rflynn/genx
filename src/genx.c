@@ -184,14 +184,12 @@ int main(int argc, char *argv[])
     Dump += 'd' == argv[1][1];
     Dump += (2 * ('D' == argv[1][1]));
   }
-
   /*
    * if called we set Target[i].out = magic(Target[i].in)
    * if not called, Target[0..TargetLen-1].out assumed set
    */
   calc_target();
-
-  CurrBest.score.f = FLT_MAX;
+  GENOSCORE_SCORE(&CurrBest) = GENOSCORE_MAX;
   CurrBest.geno.len = 0;
   rnd32_init((u32)time(NULL));
   setvbuf(stdout, (char *)NULL, _IONBF, 0); /* unbuffer stdout */
@@ -215,7 +213,8 @@ int main(int argc, char *argv[])
         /* only display best if it's changed; raises signal/noise ration */
         memcpy(&CurrBest, Pop.indiv, sizeof Pop.indiv[0]);
         gen_dump(&CurrBest.geno, stdout);
-        printf("->score=%g\n", Pop.indiv[0].score.f);
+        printf("->score=%" PRIt "\n",
+          GENOSCORE_SCORE(&Pop.indiv[0]));
         /* show detailed score from best candidate */
         (void)gen_compile(&CurrBest.geno, x86);
         (void)score(x86, 1);
@@ -237,13 +236,7 @@ int main(int argc, char *argv[])
     }
     generation++;
     gen_since_best++;
-  } while (
-#ifdef X86_USE_FLOAT
-    FLT_EPSILON <  CurrBest.score.f /* close enough in float... */
-#else
-              0 != CurrBest.score.i /* all integer bits equal */
-#endif
-  );
+  } while (!GENOSCORE_MATCH(&CurrBest));
   printf("done.\n");
   (void)gen_compile(&CurrBest.geno, x86);
   (void)score(x86, 1);
