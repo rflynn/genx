@@ -38,12 +38,12 @@ u8 x86_by_name(const char *descr);
 enum iset {
   I_86,
   I_87,
+  I_186,
   I_286,
   I_287,
   I_386,
   I_387,
   I_486,
-  I_487,
   I_586,
   I_686,
   I_MMX,
@@ -51,15 +51,13 @@ enum iset {
   I_COUNT /* last, special */
 };
 
-#define NUN 0
-
 /**
  * differentiate between integer and floating
  * point instructions
  */
 enum iflt {
-  INT,
-  FLT
+  INT = 0x1,
+  FLT = 0x2
 };
 
 /**
@@ -68,8 +66,8 @@ enum iflt {
  * operations such as <<, >>, rotate, etc.
  */
 enum ialg {
-  ALG,
-  BIT  /* operation depends on base-2 or size of register */
+  ALG = 0x1,
+  BIT = 0x2 /* operation depends on base-2 or size of register */
 };
 
 enum istor {
@@ -201,7 +199,9 @@ enum {
   MOV_IMM32_14EBP,
   FLD_14EBP,
   FILD,
+#if 0
   FISTTP,
+#endif
   FIST,
   FISTP,
 #if 0
