@@ -14,7 +14,7 @@
 #include "typ.h"
 
 #define POP_SIZE        64 * 1024 /* total genotypes in a population generation */
-#define CHROMO_MAX      16        /* maximum chromosomes in a genotype */
+#define CHROMO_MAX      64        /* maximum chromosomes in a genotype */
 #define MAX_INT_CONST   0xFFFF    /* maximum possible random integer value */
 #define MAX_FLT_CONST   10.f      /* max random floating point val */
 #define MIN_FLT_CONST  -10.f      /* min random floating point val */
