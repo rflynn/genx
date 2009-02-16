@@ -1,20 +1,50 @@
 # ex: set ff=dos ts=2 et:
 # $Id$
-
-About
------------------------------------------------------------------------------
-
-genx searches for functions via a genetic algorithm; it produces random
-functions in x86 machine language and runs them until it finds one that
-does exactly what you want.
-
-If you want to try and figure out how to use this thing:
-  see INSTALL.txt
-
-If you're interested in improving genx:
-  see TODO.txt
-
-If you want info concerning copying/stealing/modifying/selling this project:
-  see LICENSE.txt
-
+0===0  
+0===0  About
+ O=o   ----------------------------------------------------------------------
+  O    
+ o=O   genx generates functions in x86 machine language via a genetic 
+0===0  algorithm.
+0===0  
+ O=o   It produces genes consisting of random machine language.
+  O    These genes are fed input and their output is compared to a target;
+ o=O   for each generation of genes those most closely matching the target
+0===0  output are kept and used to populate the next generation.
+0===0  
+ O=o   Eventually the gene converges upon a function that maps accurately
+  O    between the target input and output.
+ o=O   
+0===0  
+0===0  Why is this interesting?
+ O=o   ----------------------------------------------------------------------
+  O    
+ o=O   Discover Unknown Functions/Relationships
+0===0   You can feed the program data whose statistical relationship is
+0===0   unknown and it can search for relationships in an automated
+ O=o    fashion.
+  O    
+ o=O   Automated Optimization
+0===0   Find shorter and more efficient methods of known functions.
+0===0   
+ O=o   It's Fast
+  O     Because the functions are expressed in native x86 they can be
+ o=O    executed by the CPU directly, allowing even a very modest desktop
+0===0   computer to try many millions of combinations per minute.
+0===0  
+ O=o   
+  O    Further Information
+ o=O   ----------------------------------------------------------------------
+0===0  
+0===0  INSTALL.txt <- Figure out how to use it
+ O=o      TODO.txt <- Help out
+  O    LICENSE.txt <- Concerning distribution
+ o=O   
+0===0  
+0===0  
+ O=o   
+  O    
+ o=O   
+0===0  
+0===0  
 
