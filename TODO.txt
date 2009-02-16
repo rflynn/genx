@@ -3,6 +3,18 @@
 
 TODO:
 
+ * aha, there's a fairly simple optimization we could perform that should
+   noticably increase performance: limit the number of data points tested
+   to (#passed + 1)
+
+   that is, begin by only testing a single data point; once there are one or
+   more functions that match it exactly, test 2 and so on. in this manner,
+   we eliminate a huge amount of work and end up with the same result.
+
+   also a similar but even easier optimization is to test the largest values
+   first (if possible), as overflow/output differences will be more quickly
+   noticed.
+
  * add support for the saving/retrieval of jobs, which will allow tasks to be
    resumed if the program crashes, and would even allow the transfer of jobs
    between machines.

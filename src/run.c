@@ -1,12 +1,14 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <float.h>
 #include <math.h>
+#include <limits.h>
 #include "typ.h"
 
 extern int Dump;
-extern struct target_f Target[];
+extern struct target Target[];
 extern u32 TargetLen;
 
 /**
@@ -71,12 +73,14 @@ static float shim_f(const void *f, float in)
   return out;
 }
 
+
+#ifdef X86_USE_FLOAT
 /**
  * given a candidate function, test it against all input and return a
  * score -- a distance from the ideal output.
  * a score of 0 indicates a perfect match against the test input
  */
-float score_f(const void *f, int verbose)
+float score(const void *f, int verbose)
 {
   float scor = 0.f;
   u32 i;
@@ -88,7 +92,7 @@ float score_f(const void *f, int verbose)
     float diff,   /* difference between target and sc */
           sc;
     if (verbose || Dump >= 2)
-      printf("%11g %11g ", Target[i].in, Target[i].out);
+      printf("%11" PRIt " %11" PRIt " ", Target[i].in, Target[i].out);
     sc = shim_f(f, Target[i].in);
     if (verbose || Dump >= 2)
       printf("%11g ", sc);
@@ -114,4 +118,43 @@ float score_f(const void *f, int verbose)
   return scor;
 }
 
+#else
+
+/**
+ * given a candidate function, test it against all input and return a
+ * score -- a distance from the ideal output.
+ * a score of 0 indicates a perfect match against the test input
+ */
+u32 score(const void *f, int verbose)
+{
+  u32 scor = 0;
+  u32 i;
+  if (verbose || Dump >= 2)
+    printf("%11s %11s %11s %11s %11s\n"
+           "----------- ----------- ----------- ----------- -----------\n",
+           "in", "target", "actual", "diff", "diffsum");
+  for (i = 0; i < TargetLen; i++) {
+    u32 diff,   /* difference between target and sc */
+        sc;
+    if (verbose || Dump >= 2)
+      printf("%11u %11u ", Target[i].in, Target[i].out);
+    sc = shim_i(f, Target[i].in);
+    if (verbose || Dump >= 2)
+      printf("%11u ", sc);
+    diff = Target[i].out - sc;
+    diff = abs(diff);
+    /* detect overflow */
+    if (INT_MAX - diff < scor) {
+      scor = INT_MAX;
+      break;
+    }
+    scor += diff;
+    if (verbose || Dump >= 2)
+      printf("%11u %11u\n", diff, scor);
+  }
+  if (verbose || Dump >= 2)
+    printf("score=%u\n", scor);
+  return scor;
+}
+#endif
 

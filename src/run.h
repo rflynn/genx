@@ -15,8 +15,11 @@
 
 #include "typ.h"
 
-float score_f(const void *f, int verbose);
-u32   score_i(const void *f, int verbose);
+#ifdef X86_USE_FLOAT
+float score(const void *f, int verbose);
+#else
+u32   score(const void *f, int verbose);
+#endif
 
 #endif
 

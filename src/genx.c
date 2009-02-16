@@ -29,9 +29,11 @@
 #define MINIMIZE_LEN  1         /* do we care about finding the shortest solution, or just any match? */
 
 extern const struct x86 X86[X86_COUNT];
+extern int genoscore_cmp(const void *, const void *);
 
 /******************* BEGIN INPUT PART *****************************/
 
+#if 0
 /*
  * the function for which we try to find an equivalence.
  * if you don't *know* what the function is, then just populate
@@ -113,45 +115,42 @@ here is the what inv_sqrt compiles to with -O0:
 */
 
 }
+#endif
 
-/*
- * the inputs we run against magic() to produce our outputs;
- * when we test candidates we give them the same output and
- * sum the difference from magic(input)
- */
-/* NOTE: lib-ize so we can include this in a separate program */
-static const float Input[] = {
-  1e-5f,
-  0.01f,
-  1.f,
-  2.f,
-  3.f,
-  1e1f,
-  1e3f,
-  1e10f,
+static s32 magic(s32 x)
+{
+  /*
+   * we'll try to find an int-only means of
+   * calculating 1.f/sqrtf(x)
+   * in order to try to beat the quake3
+   * InvSqrt hack
+   */
+  float  f = 1.f/sqrtf((float)x);
+  s32    s = *(s32 *)&f;
+  return s;
+}
+
+struct target Target[256] = {
+  { INT_MAX, 0 },
+  {    1000, 0 },
+  {      10, 0 },
+  {       5, 0 },
+  {       1, 0 },
+  {       0, 0 },
 };
-
-struct target_f Target[256] = { { 0, 0 } };
-u32 TargetLen = 0;
+u32 TargetLen = 6;
 
 /********************* END INPUT PART *****************************/
 
-static void calc_target(const float in[], unsigned cnt)
+static void calc_target(void)
 {
   unsigned i;
-  TargetLen = cnt;
-  printf("TargetLen <- %u\n", cnt);
+  printf("TargetLen <- %u\n", TargetLen);
   for (i = 0; i < TargetLen; i++) {
-    Target[i].in = in[i];
-    Target[i].out = magic(in[i]);
-    printf("Target %3u %11g -> %11g\n",
+    Target[i].out = magic(Target[i].in);
+    printf("Target %3u %11" PRIt " -> %11" PRIt "\n",
       i, Target[i].in, Target[i].out);
   }
-}
-
-static void input_init(void)
-{
-  calc_target(Input, sizeof Input / sizeof Input[0]);
 }
 
 int Dump = 0; /* verbosity level */
@@ -172,18 +171,20 @@ int main(int argc, char *argv[])
   printf("sizeof Pop=%u\n", sizeof Pop);
   printf("FLT_EPSILON=%f\n", FLT_EPSILON);
   /* sanity-checks */
-  assert(CHROMO_MAX > FUNC_PREFIX_LEN + FUNC_SUFFIX_LEN);
+  assert(CHROMO_MAX > GEN_PREFIX_LEN + GEN_SUFFIX_LEN);
   /* one-time initialization */
   x86_init();
   if (argc > 1) {
     Dump += 'd' == argv[1][1];
     Dump += (2 * ('D' == argv[1][1]));
   }
-  /* if we haven't got any data input into us, we assume we'll load
-   * data from Input
+
+  /*
+   * if called we set Target[i].out = magic(Target[i].in)
+   * if not called, Target[0..TargetLen-1].out assumed set
    */
-  if (0 == TargetLen)
-    input_init();
+  calc_target();
+
   CurrBest.score.f = FLT_MAX;
   CurrBest.geno.len = 0;
   rnd32_init((u32)time(NULL));
@@ -198,7 +199,7 @@ int main(int argc, char *argv[])
     int progress;
     pop_score(&Pop);  /* test it and sort best ones */
     indivs += sizeof Pop.indiv / sizeof Pop.indiv[0];
-    progress = Pop.indiv[0].score.f < CurrBest.score.f;
+    progress = -1 == genoscore_cmp(&Pop.indiv[0], &CurrBest);
     if (progress || 0 == generation % 100) {
       /* display generation regularly or on progress */
       time_t t = time(NULL);
@@ -211,7 +212,7 @@ int main(int argc, char *argv[])
         printf("->score=%g\n", Pop.indiv[0].score.f);
         /* show detailed score from best candidate */
         (void)gen_compile(&CurrBest.geno, x86);
-        (void)score_f(x86, 1);
+        (void)score(x86, 1);
         gen_since_best = 0;
       }
     }
@@ -223,7 +224,7 @@ int main(int argc, char *argv[])
        * retain CurrBest, against which all new candidates are judged */
       gen_dump(&CurrBest.geno, stdout);
       (void)gen_compile(&CurrBest.geno, x86);
-      (void)score_f(x86, 1);
+      (void)score(x86, 1);
       printf("No progress for %u generations, trying something new...\n", GEN_DEADEND);
       pop_gen(&Pop, 0, Cross_Rate, Mutate_Rate); /* start over! */
       gen_since_best = 0;
@@ -233,7 +234,7 @@ int main(int argc, char *argv[])
   } while (FLT_EPSILON < CurrBest.score.f); /* perfect match */
   printf("done.\n");
   (void)gen_compile(&CurrBest.geno, x86);
-  (void)score_f(x86, 1);
+  (void)score(x86, 1);
   return 0;
 }
 

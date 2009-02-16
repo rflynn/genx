@@ -33,7 +33,7 @@ struct pop {
   struct genoscore {
     union {
       float f;
-      u32   u;
+      u32   i;
     } score;
     struct genotype geno;
   } indiv[POP_SIZE];
@@ -50,26 +50,44 @@ void pop_gen(struct pop *p,
 
 void pop_score(struct pop *p);
 
-/* populate prefix */
-#define GEN_PREFIX(g) do {              \
+/*
+ * define common op prefix for all functions;
+ * required by x86 to set up environment
+ */
+#ifdef X86_USE_FLOAT
+# define GEN_PREFIX_LEN 3
+# define GEN_PREFIX(g) do {             \
     (g)->chromo[0].x86 = ENTER;         \
     (g)->chromo[1].x86 = FLD;           \
     (g)->chromo[2].x86 = SUB_14_ESP;    \
   } while (0)
-
-#if 0
-    (g)->chromo[3].x86 = MOV_IMM32_8EBP;\
-    *(u32*)&(g)->chromo[3].data = 0x3fc00000;\
-    (g)->chromo[4].x86 = FLD_8EBP;      
+#else
+# define GEN_PREFIX_LEN 2
+# define GEN_PREFIX(g) do {             \
+    (g)->chromo[0].x86 = ENTER;         \
+    (g)->chromo[1].x86 = MOV_8_EBP_EAX; \
+  } while (0)
 #endif
 
+/*
+ * common x86 function op suffix
+ */
+#ifdef X86_USE_FLOAT
+# define GEN_SUFFIX_LEN 3
 /* populate genotype suffix */
-#define GEN_SUFFIX(g) do {                  \
+# define GEN_SUFFIX(g) do {                 \
   (g)->chromo[(g)->len++].x86 = ADD_14_ESP; \
   (g)->chromo[(g)->len++].x86 = LEAVE;      \
   (g)->chromo[(g)->len++].x86 = RET;        \
   } while (0)
-
+#else
+# define GEN_SUFFIX_LEN 2
+/* populate genotype suffix */
+# define GEN_SUFFIX(g) do {                 \
+  (g)->chromo[(g)->len++].x86 = LEAVE;      \
+  (g)->chromo[(g)->len++].x86 = RET;        \
+  } while (0)
+#endif
 
 /*
  * beginnings of eventual interface describing a problem and

@@ -111,8 +111,13 @@ const struct x86 X86[X86_COUNT] = {
   { "leave"                   , { 0xc9             }, 1, 0, 0, 0, I_386, NUN, ALG },
   { "pop     %%ebp"           , { 0x5d             }, 1, 0, 0, 0, I_86,  NUN, ALG },
   { "ret"                     , { 0xc3             }, 1, 0, 0, 0, I_86,  NUN, ALG },
+
   /* function contents */
-#if 0
+
+  /*
+   * integer-related ops
+   */
+#ifdef X86_USE_INT
   { "add     0x%02" PRIx8 "," , { 0x83             }, 1, 1, 0, 1, I_386, INT, ALG },
   { "add    "                 , { 0x01             }, 1, 1, 0, 0, I_386, INT, ALG },
   { "imul    0x%02" PRIx8 "," , { 0x6b             }, 1, 1, 0, 1, I_386, INT, ALG },
@@ -176,6 +181,7 @@ const struct x86 X86[X86_COUNT] = {
   { "cmovs  "                 , { 0x0f, 0x48       }, 2, 1, 0, 0, I_386, INT, ALG },
   { "cmovz  "                 , { 0x0f, 0x44       }, 2, 1, 0, 0, I_386, INT, ALG },
 #endif
+
   { "lea   0x8(%%ebp), %%eax" , { 0x8d, 0x45, 0x08 }, 3, 0, 0, 0, I_386, NUN, ALG },
   { "mov   %%eax, -0x14(%%ebp)",{ 0x8b, 0x45, 0xce }, 3, 0, 0, 0, I_386, NUN, ALG },
 
@@ -183,12 +189,11 @@ const struct x86 X86[X86_COUNT] = {
  * x86 floating point operations
  */
 
+#ifdef X86_USE_FLOAT
   { "fld     0x8(%%ebp)"      , { 0xd9, 0x45, 0x08 }, 3, 0, 0, 0, I_87,  FLT, ALG },
-
   { "mov     $0x%08" PRIx32 ", -0x14(%%ebp)",
                                 { 0xc7, 0x45, 0xec }, 3, 0, 0, 4, I_87,  FLT, ALG },
   { "fld     -0x14(%%ebp)"    , { 0xd9, 0x45, 0xec }, 3, 0, 0, 0, I_87,  FLT, ALG },
-
   { "fild    0x8(%%ebp)"      , { 0xdb, 0x45, 0x08 }, 3, 0, 0, 0, I_87,  FLT, ALG },
   { "fisttp  0x8(%%ebp)"      , { 0xdb, 0x4d, 0x08 }, 3, 0, 0, 0, I_87,  FLT, ALG },
   { "fist    0x8(%%ebp)"      , { 0xdb, 0x55, 0x08 }, 3, 0, 0, 0, I_87,  FLT, ALG },
@@ -229,6 +234,7 @@ const struct x86 X86[X86_COUNT] = {
   { "fcmovne %%st(0),%%st(1)" , { 0xdb, 0xc1       }, 2, 0, 0, 0, I_87,  FLT, ALG },
   { "fcmovnbe %%st(0),%%st(1)", { 0xdb, 0xd1       }, 2, 0, 0, 0, I_87,  FLT, ALG },
   { "fcmovnu %%st(0),%%st(1)" , { 0xdb, 0xd9       }, 2, 0, 0, 0, I_87,  FLT, ALG },
+#endif
 
 };
 

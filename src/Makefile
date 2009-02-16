@@ -2,13 +2,17 @@
 # $Id$
 #
 
-CFLAGS = -W -Wall -pedantic -std=gnu99 -Wno-unused -DDEBUG
+CFLAGS = -W -Wall -pedantic -std=gnu99 -Wno-unused -O0 -ggdb
 LDFLAGS = -lm
 BIN = genx
 ALL = genx
 OBJ = rnd.o x86.o gen.o run.o genx.o
 
-all: $(ALL)
+int:
+	make "CFLAGS=$(CFLAGS) -DX86_USE_INT" genx
+
+float:
+	make "CFLAGS=$(CFLAGS) -DX86_USE_FLOAT" genx
 
 genx: $(OBJ)
 

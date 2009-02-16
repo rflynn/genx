@@ -97,19 +97,34 @@ struct x86 {
 };
 
 enum {
-#define FUNC_PREFIX_LEN 3 /* number of chromosomes needed to initialize function */
+  /*
+   * x86 function prefix ops
+   * int and float
+   */
   ENTER,
   PUSH_EBP,
   MOV_ESP_EBP,
-  MOV_8_EBP_EAX,
-  SUB_14_ESP,
-#define FUNC_SUFFIX_LEN 3 /* chromosomes always at the end */
+  MOV_8_EBP_EAX,  /* load eax with first parameter */
+  SUB_14_ESP,     /* reserve space for local variable, 
+                   * required to use random floating point
+                   * datum as fp ops cannot be supplied
+                   * immediate values */
+  /*
+   * x86 function suffix ops
+   * clean up and leave function
+   * int and float
+   */
   ADD_14_ESP,
   LEAVE,
   POP_EBP,
   RET,
-  /* begin instructions considered for general use with a function body */
-#if 0
+
+  /*
+   * x86 general-purpose functions to be considered
+   * for use in function body
+   */
+
+#ifdef X86_USE_INT
 # define X86_FIRST ADD_IMM8
   ADD_IMM8,
   ADD_R32,
@@ -175,24 +190,16 @@ enum {
   CMOVZ,
 #endif
 
-# define X86_FIRST LEA_8EBP_EAX
-
   LEA_8EBP_EAX,
   MOV_EAX_14EBP,
-#if 0
-  /* instructions i have tried to add but have failed for one reason or another */
-  POPCNT,
-  BSWAP_EDX,
-  IDIV_R32,
-  JE,
-  JNZ
+
+#ifdef X86_USE_FLOAT
+#ifndef X86_FIRST
+# define X86_FIRST LEA_8EBP_EAX
 #endif
-
   FLD,
-
   MOV_IMM32_14EBP,
   FLD_14EBP,
-
   FILD,
   FISTTP,
   FIST,
@@ -218,15 +225,12 @@ enum {
   FMULP,
   FADDP,
   FRNDINT,
-
   FCOMI,
   FCOMIP,
   FUCOMI,
   FUCOMIP,
-
   FICOM,
   FICOMP,
-
   FCMOVB,
   FCMOVE,
   FCMOVBE,
@@ -235,6 +239,16 @@ enum {
   FCMOVNE,
   FCMOVNBE,
   FCMOVNU,
+#endif
+
+#if 0
+  /* instructions i have tried to add but have failed for one reason or another */
+  POPCNT,
+  BSWAP_EDX,
+  IDIV_R32,
+  JE,
+  JNZ
+#endif
 
   X86_COUNT /* last, special */
 };

@@ -23,8 +23,11 @@ static void chromo_random(genotype *g, unsigned off, unsigned len)
   u32 i;
   for (i = off; i < off + len; i++) {
     const struct x86 *x;
+#ifdef X86_USE_FLOAT
 do_over:
+#endif
     g->chromo[i].x86 = randr(X86_FIRST, X86_COUNT - 1);
+#ifdef X86_USE_FLOAT
     if (FLD_14EBP == g->chromo[i].x86) {
       /* FIXME: hard-coded logic to handle instruction dependency */
       if (i == off + len - 1) /* need two spaces */
@@ -36,13 +39,18 @@ do_over:
       /* now put real one in */
       g->chromo[i].x86 = FLD_14EBP;
     } else {
+#endif
       x = X86 + g->chromo[i].x86;
       g->chromo[i].modrm = gen_modrm(x->modrm);
       if (x->immlen) {
-        //*(u32 *)&g->chromo[i].data = randr(0, MAX_CONST);
-        *(float *)&g->chromo[i].data = randfr(MIN_FLT_CONST, MAX_FLT_CONST);
+        if (FLT == x->flt)
+          *(float *)&g->chromo[i].data = randfr(MIN_FLT_CONST, MAX_FLT_CONST);
+        else
+          *(u32 *)&g->chromo[i].data = randr(0, MAX_INT_CONST);
       }
+#ifdef X86_USE_FLOAT
     }
+#endif
   }
 }
 
@@ -53,16 +61,16 @@ static void gen_mutate(genotype *g, const double mutate_rate)
    * calculate the length of the replacement;
    * this allows for insertions, deletions and replacements
    */
-  u32 doff   = randr(FUNC_PREFIX_LEN, FUNC_PREFIX_LEN + g->len - FUNC_SUFFIX_LEN),
+  u32 doff   = randr(GEN_PREFIX_LEN, GEN_PREFIX_LEN + g->len - GEN_SUFFIX_LEN),
       /* NOTE: incorporate mutate_rate somehow! */
       dlen   = (u32)(rand01() * (g->len - doff)),
       slen   = (u32)(rand01() *
-        (CHROMO_MAX - FUNC_SUFFIX_LEN - (g->len - dlen))),
+        (CHROMO_MAX - GEN_SUFFIX_LEN - (g->len - dlen))),
       suflen = g->len - (doff + dlen); /* data after the mutation */
 #if 0
   printf("g->len=%2u doff=%2u dlen=%2u slen=%2u suflen=%2u\n",
     g->len, doff, dlen, slen, suflen);
-  assert(g->len + (int)(slen - dlen) <= CHROMO_MAX - FUNC_SUFFIX_LEN);
+  assert(g->len + (int)(slen - dlen) <= CHROMO_MAX - GEN_SUFFIX_LEN);
 #endif
   if (suflen > 0)
     memmove(g->chromo + doff + slen,
@@ -78,12 +86,12 @@ static void gen_gen(genotype *dst, const genotype *src,
   if (src) {
     /* mutate an existing genotype */
     memcpy(dst, src, sizeof *dst);
-    dst->len -= FUNC_SUFFIX_LEN;
+    dst->len -= GEN_SUFFIX_LEN;
     gen_mutate(dst, mutate_rate);
   } else {
     /* initial generation */
-    dst->len = randr(FUNC_PREFIX_LEN + 1, CHROMO_MAX - FUNC_SUFFIX_LEN);
-    chromo_random(dst, FUNC_PREFIX_LEN, dst->len);
+    dst->len = randr(GEN_PREFIX_LEN + 1, CHROMO_MAX - GEN_SUFFIX_LEN);
+    chromo_random(dst, GEN_PREFIX_LEN, dst->len);
     GEN_PREFIX(dst);
   }
   GEN_SUFFIX(dst);
@@ -103,7 +111,7 @@ void pop_gen(struct pop *p,
     for (i = keep; i < sizeof p->indiv / sizeof p->indiv[0]; i++) {
       const genotype *src = &p->indiv[randr(0, keep-1)].geno;
       gen_gen(&p->indiv[i].geno, src, cross_rate, mutate_rate);
-      p->indiv[i].score.u = 0;
+      p->indiv[i].score.i = 0;
     }
   } else {
     /*
@@ -111,7 +119,7 @@ void pop_gen(struct pop *p,
      */
     for (i = keep; i < sizeof p->indiv / sizeof p->indiv[0]; i++) {
       gen_gen(&p->indiv[i].geno, NULL, cross_rate, mutate_rate);
-      p->indiv[i].score.u = 0;
+      p->indiv[i].score.i = 0;
     }
   }
 }
@@ -190,20 +198,33 @@ u32 gen_compile(genotype *g, u8 *buf)
  * given 2 genoscores, find the one with the lowest (closest) score.
  * if the scores are identical, favor the shorter one.
  */
-static int genoscore_cmp(const void *va, const void *vb)
+int genoscore_cmp(const void *va, const void *vb)
 {
   const genoscore *a = va,
                   *b = vb;
+#ifdef X86_USE_FLOAT
   return (a->score.f > b->score.f) - (a->score.f < b->score.f);
+#else
+  return (a->score.i > b->score.i) - (a->score.i < b->score.i);
+#endif
 }
 
-static int genoscore_lencmp(const void *va, const void *vb)
+/**
+ * shorter is better, given same score
+ */
+int genoscore_lencmp(const void *va, const void *vb)
 {
   const genoscore *a = va,
                   *b = vb;
-  if (a->score.f == b->score.f) /* shorter is better, given same score */
+#ifdef X86_USE_FLOAT
+  if (a->score.f == b->score.f) 
     return (a->geno.len > b->geno.len) - (a->geno.len < b->geno.len);
   return (a->score.f > b->score.f) - (a->score.f < b->score.f);
+#else
+  if (a->score.i == b->score.i) 
+    return (a->geno.len > b->geno.len) - (a->geno.len < b->geno.len);
+  return (a->score.i > b->score.i) - (a->score.i < b->score.i);
+#endif
 }
 
 void pop_score(struct pop *p)
@@ -216,7 +237,7 @@ void pop_score(struct pop *p)
       x86_dump(x86, x86len, stdout);
     if (Dump > 1)
       (void)gen_dump(&p->indiv[i].geno, stdout);
-    p->indiv[i].score.f = score_f(x86, 0);
+    p->indiv[i].score.f = score(x86, 0);
   }
   qsort(p->indiv, sizeof p->indiv / sizeof p->indiv[0],
                                     sizeof p->indiv[0], genoscore_cmp);
@@ -236,7 +257,7 @@ static int gen_load(FILE *f, genotype *g)
   struct op *o;
   /* setup prefix */
   GEN_PREFIX(g);
-  g->len = FUNC_PREFIX_LEN;
+  g->len = GEN_PREFIX_LEN;
   /* read genotype from file */
   while (NULL != fgets(line, sizeof line[0], f)) {
     if (

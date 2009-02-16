@@ -19,14 +19,30 @@ typedef  int32_t s32;
 typedef uint32_t u32;
 typedef uint64_t u64;
 
-struct target_f {
+#ifdef X86_USE_FLOAT
+# define PRIt "g"
+struct target {
   float in,
         out;
 };
-
-#undef  PRIx8
-#define PRIx8 "hhx"
-#undef  PRIu8
-#define PRIu8 "hhu"
-
+#else
+# define PRIt "u"
+struct target {
+  s32 in,
+      out;
+};
 #endif
+
+#if defined(__GNUC__) 
+/*
+ * libc defines these as "x" and "u", but this results in values
+ * not being truncated to 8 bits
+ */
+# undef  PRIx8
+# define PRIx8 "hhx"
+# undef  PRIu8
+# define PRIu8 "hhu"
+#endif
+
+#endif /* TYP_H */
+
