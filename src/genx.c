@@ -120,21 +120,27 @@ here is the what inv_sqrt compiles to with -O0:
 static s32 magic(s32 x)
 {
   /*
-   * we'll try to find an int-only means of
-   * calculating 1.f/sqrtf(x)
+   * we'll try to find a bitwise solution
+   * for calculating 1.f/sqrtf(x)
    * in order to try to beat the quake3
    * InvSqrt hack
+   *
+   * floating point on x86 is inherently slow
+   * due to longer cycles per operation and the
+   * requirement of all float loads be from memory
    */
-  float  f = 1.f/sqrtf((float)x);
-  s32    s = *(s32 *)&f;
+  float  y = *(float *)&x;  /* type-pun int->float */
+  float  f = 1.f/sqrtf(y);  /* calculate true value */
+  s32    s = *(s32 *)&f;    /* type-pun back */
   return s;
 }
 
 struct target Target[256] = {
+  {      ~0, 0 },
   { INT_MAX, 0 },
-  {    1000, 0 },
-  {      10, 0 },
-  {       5, 0 },
+  {   65535, 0 },
+  {     255, 0 },
+  {       2, 0 },
   {       1, 0 },
   {       0, 0 },
 };
@@ -231,7 +237,13 @@ int main(int argc, char *argv[])
     }
     generation++;
     gen_since_best++;
-  } while (FLT_EPSILON < CurrBest.score.f); /* perfect match */
+  } while (
+#ifdef X86_USE_FLOAT
+    FLT_EPSILON <  CurrBest.score.f /* close enough in float... */
+#else
+              0 != CurrBest.score.i /* all integer bits equal */
+#endif
+  );
   printf("done.\n");
   (void)gen_compile(&CurrBest.geno, x86);
   (void)score(x86, 1);

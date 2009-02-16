@@ -20,6 +20,7 @@ float score(const void *f, int verbose);
 #else
 u32   score(const void *f, int verbose);
 #endif
+u32 popcnt(u32 n);
 
 #endif
 

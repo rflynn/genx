@@ -2,7 +2,7 @@
 # $Id$
 #
 
-CFLAGS = -W -Wall -pedantic -std=gnu99 -Wno-unused -O0 -ggdb
+CFLAGS = -W -Wall -pedantic -std=gnu99 -Wno-unused -Os -ggdb
 LDFLAGS = -lm
 BIN = genx
 ALL = genx
@@ -24,5 +24,4 @@ genx.o: rnd.o x86.o gen.o
 
 clean:
 	$(RM) $(ALL) $(OBJ) cscope.out
-
 
