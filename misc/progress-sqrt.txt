@@ -1,0 +1,199 @@
+
+GENERATION 169100 11082203136 genotypes @Sat Feb 21 22:21:35 2009
+ 0 c8 00 00 00                     enter
+ 1 8b 45 08                        mov     0x8(%ebp),  %eax
+ 2 0f 4e d8                        cmovle  %ebx, %eax
+ 3 33 da                           xor     %ebx, %edx
+ 4 0f 46 d2                        cmovna  %edx, %edx
+ 5 0f 43 d2                        cmovnb  %edx, %edx
+ 6 87 da                           xchg    %ebx, %edx
+ 7 0f bb d8                        btc     %ebx, %eax
+ 8 c1 c8 81                        ror     0x81, %eax
+ 9 0f 4f c8                        cmovg   %ecx, %eax
+10 81 e1 e9 92 00 00               and     0x000092e9, %ecx
+11 0f bb c1                        btc     %eax, %ecx
+12 0f b1 d1                        cmpxchg %edx, %ecx
+13 0f 41 d1                        cmovno  %edx, %ecx
+14 0f ba f1 7a                     btr     0x7a, %ecx
+15 c1 d9 41                        rcr     0x41, %ecx
+16 c1 e0 41                        shl     0x41, %eax
+17 0f c1 c8                        xadd    %ecx, %eax
+18 01 d1                           add     %edx, %ecx
+19 c1 e8 42                        shr     0x42, %eax
+20 0b c1                           or      %eax, %ecx
+21 c9                              leave
+22 c3                              ret
+         in      target      actual        diff     diffsum
+----------- ----------- ----------- ----------- -----------
+          0           0           2           2           2
+          7           2           3           1           3
+         21           4           7           3           6
+         49           7           9           2           8
+        105          10          14           4          12
+        217          14          14           0          12
+        441          21          23           2          14
+        889          29          31           2          16
+       1785          42          42           0          16
+       3577          59          58           1          17
+       7161          84          94          10          27
+      14329         119         119           0          27
+      28665         169         172           3          30
+      57337         239         232           7          37
+     114681         338         350          12          49
+     229369         478         467          11          60
+     458745         677         688          11          71
+     917497         957         957           0          71
+    1835001        1354        1362           8          79
+    3670009        1915        1887          28         107
+    7340025        2709        2708           1         108
+score=108
+
+
+GENERATION 101100 6625755136 genotypes @Sat Feb 21 12:43:57 2009
+ 0 c8 00 00 00                     enter
+ 1 8b 45 08                        mov     0x8(%ebp),  %eax
+ 2 0f 49 d8                        cmovns  %ebx, %eax
+ 3 0f 49 d0                        cmovns  %edx, %eax
+ 4 0f 44 c0                        cmovz   %eax, %eax
+ 5 c1 cb c1                        rol     0xc1, %ecx, %ebx
+ 6 0f 4b c9                        cmovnp  %ecx, %ecx
+ 7 0f bb d8                        btc     %ebx, %eax
+ 8 0f 46 d8                        cmovbe  %ebx, %eax
+ 9 0f 42 c2                        cmovc   %eax, %edx
+10 0f 42 c0                        cmovb   %eax, %eax
+11 0f ba e2 f3                     bt      0xf3, %edx
+12 c1 eb e1                        shr     0xe1, %ebx
+13 0f 48 ca                        cmovs   %ecx, %edx
+14 0f 44 d3                        cmove   %edx, %ebx
+15 0f 42 d3                        cmovc   %edx, %ebx
+16 0f 46 d8                        cmovbe  %ebx, %eax
+17 01 c0                           add     %eax, %eax
+18 0f b3 cb                        btr     %ecx, %ebx
+19 0b c3                           or      %eax, %ebx
+20 33 c2                           xor     %eax, %edx
+21 c9                              leave
+22 c3                              ret
+         in      target      actual        diff     diffsum
+----------- ----------- ----------- ----------- -----------
+          0           0           2           2           2
+          7           2           2           0           2
+         21           4           6           2           4
+         49           7           6           1           5
+        105          10          12           2           7
+        217          14          14           0           7
+        441          21          24           3          10
+        889          29          25           4          14
+       1785          42          52          10          24
+       3577          59          54           5          29
+       7161          84          94          10          39
+      14329         119         107          12          51
+      28665         169         178           9          60
+      57337         239         248           9          69
+     114681         338         336           2          71
+     229369         478         473           5          76
+     458745         677         696          19          95
+     917497         957         954           3          98
+    1835001        1354        1342          12         110
+    3670009        1915        1855          60         170
+    7340025        2709        2622          87         257
+score=257
+
+GENERATION 25331 1660157952 genotypes @Sat Feb 14 05:46:40 2009
+ 0 c8 00 00 00                     enter
+ 1 8b 45 08                        mov     0x8(%ebp),  %eax
+ 2 0f 4a d9                        cmovp   %ebx, %ecx
+ 3 0b c8                           or      %ecx, %eax
+ 4 81 eb a7 62 00 00               sub     0x000062a7, %ebx
+ 5 0f b3 c9                        btr     %ecx, %ecx
+ 6 c1 d9 61                        rcr     0x61, %ecx
+ 7 0f bb c8                        btc     %ecx, %eax
+ 8 0f 4c d0                        cmovl   %edx, %eax
+ 9 39 d2                           cmp     %edx, %edx
+10 0f 45 c8                        cmovne  %ecx, %eax
+11 c1 da c1                        rcr     0xc1, %edx
+12 0f 42 c8                        cmovnae %ecx, %eax
+13 87 d1                           xchg    %edx, %ecx
+14 0f a3 da                        bt      %ebx, %edx
+15 0b c2                           or      %eax, %edx
+16 c1 d0 e1                        rcl     0xe1, %eax
+17 0f 42 d0                        cmovb   %edx, %eax
+18 0f 4b c9                        cmovnp  %ecx, %ecx
+19 33 c1                           xor     %eax, %ecx
+20 0b c2                           or      %eax, %edx
+21 c9                              leave
+22 c3                              ret
+score=292
+         in      target      actual        diff     diffsum
+----------- ----------- ----------- ----------- -----------
+          0           0           3           3           3
+          7           2           0           2           5
+         21           4           3           1           6
+         49           7           3           4          10
+        105          10           6           4          14
+        217          14           3          11          25
+        441          21          27           6          31
+        889          29          31           2          33
+       1785          42          52          10          43
+       3577          59          63           4          47
+       7161          84          79           5          52
+      14329         119         107          12          64
+      28665         169         190          21          85
+      57337         239         253          14          99
+     114681         338         351          13         112
+     229369         478         479           1         113
+     458745         677         696          19         132
+     917497         957         955           2         134
+    1835001        1354        1343          11         145
+    3670009        1915        1855          60         205
+    7340025        2709        2622          87         292
+score=292
+
+GENERATION  3893  255197184 genotypes @Sat Feb 14 03:54:20 2009
+ 0 c8 00 00 00                     enter
+ 1 8b 45 08                        mov     0x8(%ebp),  %eax
+ 2 c1 e0 6d                        shl     0x6d, %eax
+ 3 c1 d0 b3                        rol     0xb3, %edx, %eax
+ 4 0f 46 d8                        cmovbe  %ebx, %eax
+ 5 0f af db                        imul    %ebx, %ebx
+ 6 0f 43 ca                        cmovnc  %ecx, %edx
+ 7 81 e3 e2 ea 00 00               and     0x0000eae2, %ebx
+ 8 0f bb c3                        btc     %eax, %ebx
+ 9 0f c1 db                        xadd    %ebx, %ebx
+10 0f 4b c2                        cmovnp  %eax, %edx
+11 6b c3 56                        imul    0x56, %eax, %ebx
+12 c1 db 42                        rcr     0x42, %ebx
+13 0f 4a d9                        cmovp   %ebx, %ecx
+14 83 d0 b7                        add     0xb7, %edx, %eax
+15 f7 d1                           not     %ecx
+16 0f af db                        imul    %ebx, %ebx
+17 0b c3                           or      %eax, %ebx
+18 39 c9                           cmp     %ecx, %ecx
+19 0f ba f9 17                     btc     0x17, %ecx
+20 c1 e8 c6                        shr     0xc6, %eax
+21 c9                              leave
+22 c3                              ret
+score=323
+         in      target      actual        diff     diffsum
+----------- ----------- ----------- ----------- -----------
+          0           0           1           1           1
+          7           2           1           1           2
+         21           4           4           0           2
+         49           7           4           3           5
+        105          10           9           1           6
+        217          14           9           5          11
+        441          21          20           1          12
+        889          29          20           9          21
+       1785          42          41           1          22
+       3577          59          41          18          40
+       7161          84          84           0          40
+      14329         119          84          35          75
+      28665         169         186          17          92
+      57337         239         256          17         109
+     114681         338         342           4         113
+     229369         478         492          14         127
+     458745         677         686           9         136
+     917497         957         986          29         165
+    1835001        1354        1374          20         185
+    3670009        1915        1818          97         282
+    7340025        2709        2750          41         323
+

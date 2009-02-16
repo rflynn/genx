@@ -19,7 +19,11 @@ typedef  int32_t s32;
 typedef uint32_t u32;
 typedef uint64_t u64;
 
+#if 0
 typedef int (*func)(int);
+#else
+typedef float (*func)(float);
+#endif
 
 #undef  PRIx8
 #define PRIx8 "hhx"

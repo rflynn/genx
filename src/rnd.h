@@ -23,5 +23,7 @@ u32  randr(u32 min, u32 max);
  */
 #define rand01()  drand48()
 
+float randfr(float min, float max);
+
 #endif
 

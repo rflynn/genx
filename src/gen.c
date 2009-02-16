@@ -16,18 +16,33 @@
 
 extern const struct x86 X86[X86_COUNT];
 extern int Dump;
-extern u32 score(func f, int verbose);
+extern float score(func f, int verbose);
 
 static void chromo_random(genotype *g, unsigned off, unsigned len)
 {
   u32 i;
   for (i = off; i < off + len; i++) {
     const struct x86 *x;
+do_over:
     g->chromo[i].x86 = randr(X86_FIRST, X86_COUNT - 1);
-    x = X86 + g->chromo[i].x86;
-    g->chromo[i].modrm = gen_modrm(x->modrm);
-    if (x->immlen)
-      *(u32 *)&g->chromo[i].data = randr(0, MAX_CONST);
+    if (FLD_14EBP == g->chromo[i].x86) {
+      /* FIXME: hard-coded logic to handle instruction dependency */
+      if (i == off + len - 1) /* need two spaces */
+        goto do_over;
+      /* generate prerequisite */
+      g->chromo[i].x86 = MOV_IMM32_14EBP;
+      *(float *)&g->chromo[i].data = randfr(MIN_FLT_CONST, MAX_FLT_CONST);
+      i++;
+      /* now put real one in */
+      g->chromo[i].x86 = FLD_14EBP;
+    } else {
+      x = X86 + g->chromo[i].x86;
+      g->chromo[i].modrm = gen_modrm(x->modrm);
+      if (x->immlen) {
+        //*(u32 *)&g->chromo[i].data = randr(0, MAX_CONST);
+        *(float *)&g->chromo[i].data = randfr(MIN_FLT_CONST, MAX_FLT_CONST);
+      }
+    }
   }
 }
 
@@ -42,16 +57,20 @@ static void gen_mutate(genotype *g, const double mutate_rate)
       /* NOTE: incorporate mutate_rate somehow! */
       dlen   = (u32)(rand01() * (g->len - doff)),
       slen   = (u32)(rand01() *
-        (CHROMO_MAX - FUNC_SUFFIX_LEN - (g->len - dlen))),
+        (CHROMO_MAX - FUNC_SUFFIX_LEN - (g->len - dlen - 1))),
       suflen = g->len - (doff + dlen); /* data after the mutation */
-  assert(g->len + (int)(slen - dlen) <= CHROMO_MAX - FUNC_SUFFIX_LEN);
+#if 0
+  printf("g->len=%2u doff=%2u dlen=%2u slen=%2u suflen=%2u\n",
+    g->len, doff, dlen, slen, suflen);
+#endif
+  //assert(g->len + (int)(slen - dlen) <= CHROMO_MAX - FUNC_SUFFIX_LEN);
   if (suflen > 0)
     memmove(g->chromo + doff + slen,
             g->chromo + doff, suflen * sizeof g->chromo[0]);
   if (slen > 0)
     chromo_random(g, doff, slen);
   g->len += (int)(slen - dlen);
-  assert(g->len <= CHROMO_MAX - FUNC_SUFFIX_LEN);
+  //assert(g->len <= CHROMO_MAX - FUNC_SUFFIX_LEN);
 }
 
 static void gen_gen(genotype *dst, const genotype *src,
@@ -202,6 +221,7 @@ void pop_score(struct pop *p)
     if (Dump > 1)
       (void)gen_dump(&p->indiv[i].geno, stdout);
     p->indiv[i].score = score((func)x86, 0);
+    assert(p->indiv[0].score > 0.f);
   }
   qsort(p->indiv, sizeof p->indiv / sizeof p->indiv[0],
                                     sizeof p->indiv[0], genoscore_cmp);

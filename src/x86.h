@@ -30,23 +30,46 @@ void         x86_dump(const u8 *x86, u32 len, FILE *f);
 u8 x86_by_name(const char *descr);
 
 /**
- * the different instruction sets through time;
- * at least they're backwards compatible;
- * this allows us to target different CPUs
- * NOTE: unused at the moment
+ * instruction sets in the x86 family;
+ * allows us to classify and use/disuse
+ * subsets of the total instructions
+ * depending on which CPU we are to run on
  */
-enum {
-  CPU_88,
-  CPU_86,
-  CPU_286,
-  CPU_386,
-  CPU_486,
-  CPU_586,
-  CPU_686,
-  CPU_MMX1,
-  CPU_MMX2,
-  CPU_MMX3,
-  CPU_COUNT /* last, special */
+enum iset {
+  I_86,
+  I_87,
+  I_286,
+  I_287,
+  I_386,
+  I_387,
+  I_486,
+  I_487,
+  I_586,
+  I_686,
+  I_MMX,
+  I_SSE,
+  I_COUNT /* last, special */
+};
+
+#define NUN 0
+
+/**
+ * differentiate between integer and floating
+ * point instructions
+ */
+enum iflt {
+  INT,
+  FLT
+};
+
+/**
+ * differentiate between algebraic operations
+ * (such as +, -, *, /, etc) and bitwise
+ * operations such as <<, >>, rotate, etc.
+ */
+enum ialg {
+  ALG,
+  BIT  /* operation depends on base-2 or size of register */
 };
 
 struct x86 {
@@ -57,17 +80,23 @@ struct x86 {
            modrmlen,
            modrm,     /* /n digit for some operations       */
            immlen;    /* number of variable bytes           */
+  enum iset set;
+  enum iflt flt;
+  enum ialg alg;
 };
 
 enum {
-#define FUNC_PREFIX_LEN 2 /* number of chromosomes needed to initialize function */
+#define FUNC_PREFIX_LEN 3 /* number of chromosomes needed to initialize function */
   ENTER,
   MOV_8_EBP_EAX,
-#define FUNC_SUFFIX_LEN 2 /* chromosomes always at the end */
+  SUB_14_ESP,
+#define FUNC_SUFFIX_LEN 3 /* chromosomes always at the end */
+  ADD_14_ESP,
   LEAVE,
   RET,
   /* begin instructions considered for general use with a function body */
-#define X86_FIRST ADD_IMM8
+#if 0
+# define X86_FIRST ADD_IMM8
   ADD_IMM8,
   ADD_R32,
   IMUL_IMM,
@@ -130,6 +159,12 @@ enum {
   CMOVPO,
   CMOVS,
   CMOVZ,
+#endif
+
+# define X86_FIRST LEA_8EBP_EAX
+
+  LEA_8EBP_EAX,
+  MOV_EAX_14EBP,
 #if 0
   /* instructions i have tried to add but have failed for one reason or another */
   POPCNT,
@@ -138,6 +173,59 @@ enum {
   JE,
   JNZ
 #endif
+
+
+  FLD,
+
+  MOV_IMM32_14EBP,
+  FLD_14EBP,
+
+#if 1
+  FILD,
+  FISTTP,
+  FIST,
+  FISTP,
+
+#if 0
+  F2XM1,
+#endif
+  FPREM,
+  FSQRT,
+  FSINCOS,
+  FSCALE,
+  FSIN,
+  FCOS,
+  FCHS,
+  FXAM,
+  FLD1,
+  FLDL2T,
+  FLDL2E,
+  FLDPI,
+  FLDLG2,
+  FLDLN2,
+  FABS,
+  FMULP,
+  FADDP,
+  FRNDINT,
+
+  FCOMI,
+  FCOMIP,
+  FUCOMI,
+  FUCOMIP,
+
+  FICOM,
+  FICOMP,
+
+  FCMOVB,
+  FCMOVE,
+  FCMOVBE,
+  FCMOVU,
+  FCMOVNB,
+  FCMOVNE,
+  FCMOVNBE,
+  FCMOVNU,
+#endif
+
   X86_COUNT /* last, special */
 };
 

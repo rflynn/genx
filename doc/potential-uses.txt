@@ -1,0 +1,23 @@
+# ex: set ff=dos ts=2 et:
+# $Id$
+# Brain-storm applications and directions towards which we could head
+
+Finding relationships between disparate data
+
+  This is the coolest application I can think of: feeding in tables
+  of input and output data and trying to boil down the relationship
+  to the simplest mapping.
+
+  -> Need support for multiple input parameters
+
+Integer functions:
+  generic hash functions
+    -> Need ability to operate on strings
+  minimal perfect hashing for specified datasets
+
+Optimizing best-known implementations
+  
+
+Finding branchless implementations of existing functions
+  
+
