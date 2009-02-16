@@ -166,34 +166,16 @@ static float asm_func_shim(func f, float in)
 {
   float out;
   asm volatile(
-    /* save and zero regs to prevent cheating by called function */
-    /* note: eax contains param 'in' */
-#if 0
-    "push %%eax;"
-    "push %%ebx;"
-    "push %%ecx;"
-    "push %%edx;"
-    "xor  %%eax, %%eax;"
-    "xor  %%ebx, %%ebx;"
-    "xor  %%ecx, %%ecx;"
-    "xor  %%edx, %%edx;"
-#endif
     /* pass in first parameter */
-#if 0
-    "movl %1, (%%esp);"
-#else
     "fld  %1;"
     "fstp (%%esp);"
-#endif
     /* call function pointer */
     "call *%2;"
     "fst   %0;"
-    /* aha! this took me a long time to figure out...
-     * x86 uses a stack for all flops, which is stateful;
-     * the stack is 8 deep, so after every function we
-     * blow away any possible contents of said stack
-     * so as to ensure we do not carry any data on the stack
-     * between calls
+    /*
+     * clear entire (8 member) x86 float stack
+     * every time, lest it eventually fill up.
+     * this took a while to figure out :-/
      */
     "ffree %%st(0);"
     "ffree %%st(1);"
@@ -203,13 +185,6 @@ static float asm_func_shim(func f, float in)
     "ffree %%st(5);"
     "ffree %%st(6);"
     "ffree %%st(7);"
-    /* restore regs */
-#if 0
-    "pop  %%edx;"
-    "pop  %%ecx;"
-    "pop  %%ebx;"
-    "pop  %%eax;"
-#endif
     : "=m"(out)
     : "m"(in), "r"(f));
   return out;
@@ -238,7 +213,7 @@ float score(func f, int verbose)
     sc = asm_func_shim(f, Target[i].in);
     if (verbose || Dump >= 2)
       printf("%11g ", sc);
-    if (isnan(sc) || isinf(sc)) {
+    if (!isfinite(sc)) {
       scor = FLT_MAX;
       if (verbose || Dump >= 2)
         fputc('\n', stdout);
