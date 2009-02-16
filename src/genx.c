@@ -257,7 +257,6 @@ float score(func f, int verbose)
   }
   if (verbose || Dump >= 2)
     printf("score=%g\n", scor);
-  //assert(scor > 0.f);
   return scor;
 }
 
@@ -311,7 +310,6 @@ int main(int argc, char *argv[])
         generation, indivs, ctime(&t));
       if (progress) {
         /* only display best if it's changed; raises signal/noise ration */
-        assert(Pop.indiv[0].score < CurrBest.score);
         memcpy(&CurrBest, Pop.indiv, sizeof Pop.indiv[0]);
         gen_dump(&CurrBest.geno, stdout);
         printf("->score=%g\n", Pop.indiv[0].score);

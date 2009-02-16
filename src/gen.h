@@ -60,10 +60,10 @@ void pop_score(struct pop *p);
 #endif
 
 /* populate genotype suffix */
-#define GEN_SUFFIX(g) do {              \
+#define GEN_SUFFIX(g) do {                  \
   (g)->chromo[(g)->len++].x86 = ADD_14_ESP; \
-  (g)->chromo[(g)->len++].x86 = LEAVE;  \
-  (g)->chromo[(g)->len++].x86 = RET;    \
+  (g)->chromo[(g)->len++].x86 = LEAVE;      \
+  (g)->chromo[(g)->len++].x86 = RET;        \
   } while (0)
 
 

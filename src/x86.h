@@ -88,11 +88,14 @@ struct x86 {
 enum {
 #define FUNC_PREFIX_LEN 3 /* number of chromosomes needed to initialize function */
   ENTER,
+  PUSH_EBP,
+  MOV_ESP_EBP,
   MOV_8_EBP_EAX,
   SUB_14_ESP,
 #define FUNC_SUFFIX_LEN 3 /* chromosomes always at the end */
   ADD_14_ESP,
   LEAVE,
+  POP_EBP,
   RET,
   /* begin instructions considered for general use with a function body */
 #if 0
@@ -174,18 +177,15 @@ enum {
   JNZ
 #endif
 
-
   FLD,
 
   MOV_IMM32_14EBP,
   FLD_14EBP,
 
-#if 1
   FILD,
   FISTTP,
   FIST,
   FISTP,
-
 #if 0
   F2XM1,
 #endif
@@ -224,7 +224,6 @@ enum {
   FCMOVNE,
   FCMOVNBE,
   FCMOVNU,
-#endif
 
   X86_COUNT /* last, special */
 };

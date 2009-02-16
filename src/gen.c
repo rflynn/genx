@@ -57,20 +57,19 @@ static void gen_mutate(genotype *g, const double mutate_rate)
       /* NOTE: incorporate mutate_rate somehow! */
       dlen   = (u32)(rand01() * (g->len - doff)),
       slen   = (u32)(rand01() *
-        (CHROMO_MAX - FUNC_SUFFIX_LEN - (g->len - dlen - 1))),
+        (CHROMO_MAX - FUNC_SUFFIX_LEN - (g->len - dlen))),
       suflen = g->len - (doff + dlen); /* data after the mutation */
 #if 0
   printf("g->len=%2u doff=%2u dlen=%2u slen=%2u suflen=%2u\n",
     g->len, doff, dlen, slen, suflen);
+  assert(g->len + (int)(slen - dlen) <= CHROMO_MAX - FUNC_SUFFIX_LEN);
 #endif
-  //assert(g->len + (int)(slen - dlen) <= CHROMO_MAX - FUNC_SUFFIX_LEN);
   if (suflen > 0)
     memmove(g->chromo + doff + slen,
             g->chromo + doff, suflen * sizeof g->chromo[0]);
   if (slen > 0)
     chromo_random(g, doff, slen);
   g->len += (int)(slen - dlen);
-  //assert(g->len <= CHROMO_MAX - FUNC_SUFFIX_LEN);
 }
 
 static void gen_gen(genotype *dst, const genotype *src,
@@ -122,7 +121,6 @@ void gen_dump(const struct genotype *g, FILE *f)
   char hex[32],
        *h;
   u32 i, j;
-  assert(g->len <= CHROMO_MAX);
   for (i = 0; i < g->len; i++) {
     const struct x86 *x = X86 + g->chromo[i].x86;
     h = hex;
@@ -163,7 +161,6 @@ inline static u32 chromo_add(const struct op *op, u8 *buf, u32 len)
   assert(x->modrmlen <= 1);
   assert(x->immlen  <= 4);
 #endif
-  //memcpy(buf + len, x->op, x->oplen);
   /* maximum possible value, but not always correc,t why use it?
    * using a constant value for length lets optimizing compilers
    * remove the memcpy call altogether, and it still works because
@@ -174,7 +171,6 @@ inline static u32 chromo_add(const struct op *op, u8 *buf, u32 len)
   if (x->modrmlen)
     buf[len++] = op->modrm;
   if (x->immlen) {
-    //memcpy(buf + len, op->data, x->immlen);
     memcpy(buf + len, op->data, sizeof op->data);
     len += x->immlen;
   }
@@ -221,7 +217,6 @@ void pop_score(struct pop *p)
     if (Dump > 1)
       (void)gen_dump(&p->indiv[i].geno, stdout);
     p->indiv[i].score = score((func)x86, 0);
-    assert(p->indiv[0].score > 0.f);
   }
   qsort(p->indiv, sizeof p->indiv / sizeof p->indiv[0],
                                     sizeof p->indiv[0], genoscore_cmp);

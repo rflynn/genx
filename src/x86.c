@@ -99,12 +99,15 @@ const struct x86 X86[X86_COUNT] = {
   /* function op */
   /* descr                        opcode              oplen,modrmlen,modrm,imm */
   { "enter"                   , { 0xc8, 0x00, 0, 0 }, 4, 0, 0, 0, I_386, NUN, ALG },
-  { "mov     0x8(%%ebp), %%eax",{ 0x8b, 0x45, 0x08 }, 3, 0, 0, 0, I_386, INT, ALG },
-  { "sub     $0x14, %%esp"    , { 0x83, 0xec, 0x14 }, 3, 0, 0, 0, I_386, FLT, ALG },
+  { "push    %%ebp"           , { 0x55             }, 1, 0, 0, 0, I_86,  NUN, ALG },
+  { "mov     %%esp, %%ebp"    , { 0x89, 0xe5       }, 2, 0, 0, 0, I_86,  NUN, ALG },
+  { "mov     0x8(%%ebp), %%eax",{ 0x8b, 0x45, 0x08 }, 3, 0, 0, 0, I_86,  NUN, ALG },
+  { "sub     $0x14, %%esp"    , { 0x83, 0xec, 0x14 }, 3, 0, 0, 0, I_86,  FLT, ALG },
   /* function suffix */
-  { "add     $0x14, %%esp"    , { 0x83, 0xc4, 0x14 }, 3, 0, 0, 0, I_386, FLT, ALG },
+  { "add     $0x14, %%esp"    , { 0x83, 0xc4, 0x14 }, 3, 0, 0, 0, I_86,  FLT, ALG },
   { "leave"                   , { 0xc9             }, 1, 0, 0, 0, I_386, NUN, ALG },
-  { "ret"                     , { 0xc3             }, 1, 0, 0, 0, I_386, NUN, ALG },
+  { "pop     %%ebp"           , { 0x5d             }, 1, 0, 0, 0, I_86,  NUN, ALG },
+  { "ret"                     , { 0xc3             }, 1, 0, 0, 0, I_86,  NUN, ALG },
   /* function contents */
 #if 0
   { "add     0x%02" PRIx8 "," , { 0x83             }, 1, 1, 0, 1, I_386, INT, ALG },
@@ -179,26 +182,6 @@ const struct x86 X86[X86_COUNT] = {
 
   { "fld     0x8(%%ebp)"      , { 0xd9, 0x45, 0x08 }, 3, 0, 0, 0, I_87,  FLT, ALG },
 
-  /*
-   * FIXME: these operations are dependent on each other; we cannot sanely run
-   * the fld without running mov at least once; how best to solve this dependency?
-   *
-   * - modify the instruction templates and hardcode the two functions together
-   *    this is the quickest and easiest way, but also the worst; it's a sloppy
-   *    hack and will not scale if we run into the problem again
-   * - add a field with a "next" instruction id; when one is chosen if it has a next_id
-   *   we append the next one too
-   *    this is still a hack, but it's cleaner because it keeps the entries at least
-   *    ostensibly separate. it complicates the logic for generating random instructions,
-   *    but not horribly.
-   * - create a separate structure that has references to ordered subsets of instructions
-   *    this is overkill at the moment, since it would basically be an exact reproduction
-   *    of this table with just the one special case; also it wouldn't negate the
-   *    need to update the instruction generation;
-   *    HOWEVER, if in the future we do need to have different combinations of instructions
-   *    grouped together this is the way to do it.
-   *
-   */
   { "mov     $0x%08" PRIx32 ", -0x14(%%ebp)",
                                 { 0xc7, 0x45, 0xec }, 3, 0, 0, 4, I_87,  FLT, ALG },
   { "fld     -0x14(%%ebp)"    , { 0xd9, 0x45, 0xec }, 3, 0, 0, 0, I_87,  FLT, ALG },
