@@ -7,16 +7,24 @@ TODO:
    resumed if the program crashes, and would even allow the transfer of jobs
    between machines.
 
+    * add support for some sort of cool visualization output, even if it's silly
+      people are much more likely to be interested if we can at least show them
+      that something is happening
+
+      - this would probably be a component separate from the actual crunching
+      - once we keep some sort of parseable output log we can write a little
+        gui applet that reads them and displays visualizations of the
+          - target function/data
+          - best known candidate
+          - a random sampling of candidates from the most recent generations
+
+        this shouldn't be too hard, too CPU-intensive or too complex, but
+        it will get people more excited about using it.
+
  * define a proper interface so we can lib-ize the evolution/x86 part and can
    separate the "problem" we are trying to solve into a separate program.
 
  * add support for multiple input parameters
-
- * add support for some sort of cool visualization output, even if it's silly
-   people are much more likely to be interested if we can at least show them
-   that something is happening
-
-   this would probably be a component separate from the actual crunching
 
  * implement some basic guidance for the function generation:
 
