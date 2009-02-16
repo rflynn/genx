@@ -11,6 +11,7 @@
 #define GEN_H
 
 #include <stdio.h>
+#include "typ.h"
 
 #define POP_SIZE        64 * 1024 /* total genotypes in a population generation */
 #define CHROMO_MAX      16        /* maximum chromosomes in a genotype */
@@ -30,7 +31,10 @@ typedef struct genotype genotype;
 
 struct pop {
   struct genoscore {
-    float score;
+    union {
+      float f;
+      u32   u;
+    } score;
     struct genotype geno;
   } indiv[POP_SIZE];
 };

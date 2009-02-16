@@ -36,14 +36,17 @@ u8 gen_modrm(u8 digit)
     0xd8, /* ebx <- eax */
     0xc8, /* ecx <- eax */
     0xd0, /* edx <- eax */
+
     0xc3, /* eax <- ebx */
     0xdb, /* ebx <- ebx */
     0xcb, /* ecx <- ebx */
     0xd3, /* edx <- ebx */
+
     0xc1, /* eax <- ecx */
     0xd9, /* ebx <- ecx */
     0xc9, /* ecx <- ecx */
     0xd1, /* edx <- ecx */
+
     0xc2, /* eax <- edx */
     0xda, /* ebx <- edx */
     0xca, /* ecx <- edx */

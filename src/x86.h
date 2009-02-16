@@ -72,6 +72,17 @@ enum ialg {
   BIT  /* operation depends on base-2 or size of register */
 };
 
+enum istor {
+  EAX = 1,
+  EBX,
+  ECX,
+  EDX,
+  EBP8,
+  EBP_14,
+  ST0,
+  ST1
+};
+
 struct x86 {
   const char *descr;  /* printf-friendly format, which
                        * displays the 'rest' bytes (if any) */

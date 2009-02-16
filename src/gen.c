@@ -13,10 +13,10 @@
 #include "typ.h"
 #include "rnd.h"
 #include "x86.h"
+#include "run.h"
 
 extern const struct x86 X86[X86_COUNT];
 extern int Dump;
-extern float score(func f, int verbose);
 
 static void chromo_random(genotype *g, unsigned off, unsigned len)
 {
@@ -103,7 +103,7 @@ void pop_gen(struct pop *p,
     for (i = keep; i < sizeof p->indiv / sizeof p->indiv[0]; i++) {
       const genotype *src = &p->indiv[randr(0, keep-1)].geno;
       gen_gen(&p->indiv[i].geno, src, cross_rate, mutate_rate);
-      p->indiv[i].score = 0;
+      p->indiv[i].score.u = 0;
     }
   } else {
     /*
@@ -111,7 +111,7 @@ void pop_gen(struct pop *p,
      */
     for (i = keep; i < sizeof p->indiv / sizeof p->indiv[0]; i++) {
       gen_gen(&p->indiv[i].geno, NULL, cross_rate, mutate_rate);
-      p->indiv[i].score = 0;
+      p->indiv[i].score.u = 0;
     }
   }
 }
@@ -194,16 +194,16 @@ static int genoscore_cmp(const void *va, const void *vb)
 {
   const genoscore *a = va,
                   *b = vb;
-  return (a->score > b->score) - (a->score < b->score);
+  return (a->score.f > b->score.f) - (a->score.f < b->score.f);
 }
 
 static int genoscore_lencmp(const void *va, const void *vb)
 {
   const genoscore *a = va,
                   *b = vb;
-  if (a->score == b->score) /* shorter is better, given same score */
+  if (a->score.f == b->score.f) /* shorter is better, given same score */
     return (a->geno.len > b->geno.len) - (a->geno.len < b->geno.len);
-  return (a->score > b->score) - (a->score < b->score);
+  return (a->score.f > b->score.f) - (a->score.f < b->score.f);
 }
 
 void pop_score(struct pop *p)
@@ -216,7 +216,7 @@ void pop_score(struct pop *p)
       x86_dump(x86, x86len, stdout);
     if (Dump > 1)
       (void)gen_dump(&p->indiv[i].geno, stdout);
-    p->indiv[i].score = score((func)x86, 0);
+    p->indiv[i].score.f = score_f(x86, 0);
   }
   qsort(p->indiv, sizeof p->indiv / sizeof p->indiv[0],
                                     sizeof p->indiv[0], genoscore_cmp);

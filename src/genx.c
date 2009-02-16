@@ -22,6 +22,7 @@
 #include "rnd.h"
 #include "x86.h"
 #include "gen.h"
+#include "run.h"
 
 #define GEN_DEADEND   1000      /* start over after this many generations of no progress */
 #define POP_KEEP      3         /* keep this many from generation to generation */
@@ -130,13 +131,8 @@ static const float Input[] = {
   1e10f,
 };
 
-static struct target {
-  float in,
-        out;
-} Target[256] = {
- { 0, 0 }
-};
-static u32 TargetLen = 0;
+struct target_f Target[256] = { { 0, 0 } };
+u32 TargetLen = 0;
 
 /********************* END INPUT PART *****************************/
 
@@ -158,82 +154,7 @@ static void input_init(void)
   calc_target(Input, sizeof Input / sizeof Input[0]);
 }
 
-/**
- * given a candidate function and an input, pass input as a parameter
- * and execute 'f'
- */
-static float asm_func_shim(func f, float in)
-{
-  float out;
-  asm volatile(
-    /* pass in first parameter */
-    "fld  %1;"
-    "fstp (%%esp);"
-    /* call function pointer */
-    "call *%2;"
-    "fst   %0;"
-    /*
-     * clear entire (8 member) x86 float stack
-     * every time, lest it eventually fill up.
-     * this took a while to figure out :-/
-     */
-    "ffree %%st(0);"
-    "ffree %%st(1);"
-    "ffree %%st(2);"
-    "ffree %%st(3);"
-    "ffree %%st(4);"
-    "ffree %%st(5);"
-    "ffree %%st(6);"
-    "ffree %%st(7);"
-    : "=m"(out)
-    : "m"(in), "r"(f));
-  return out;
-}
-
 int Dump = 0; /* verbosity level */
-
-/**
- * given a candidate function, test it against all input and return a
- * score -- a distance from the ideal output.
- * a score of 0 indicates a perfect match against the test input
- */
-float score(func f, int verbose)
-{
-  float scor = 0.f;
-  u32 i;
-  if (verbose || Dump >= 2)
-    printf("%11s %11s %11s %11s %11s\n"
-           "----------- ----------- ----------- ----------- -----------\n",
-           "in", "target", "actual", "diff", "diffsum");
-  for (i = 0; i < TargetLen; i++) {
-    float diff,   /* difference between target and sc */
-          sc;
-    if (verbose || Dump >= 2)
-      printf("%11g %11g ", Target[i].in, Target[i].out);
-    sc = asm_func_shim(f, Target[i].in);
-    if (verbose || Dump >= 2)
-      printf("%11g ", sc);
-    if (!isfinite(sc)) {
-      scor = FLT_MAX;
-      if (verbose || Dump >= 2)
-        fputc('\n', stdout);
-      break;
-    }
-    diff = Target[i].out - sc;
-    diff = fabs(diff);
-    /* detect overflow */
-    if (FLT_MAX - diff < scor) {
-      scor = FLT_MAX;
-      break;
-    }
-    scor += diff;
-    if (verbose || Dump >= 2)
-      printf("%11g %11g\n", diff, scor);
-  }
-  if (verbose || Dump >= 2)
-    printf("score=%g\n", scor);
-  return scor;
-}
 
 int main(int argc, char *argv[])
 {
@@ -263,7 +184,7 @@ int main(int argc, char *argv[])
    */
   if (0 == TargetLen)
     input_init();
-  CurrBest.score = FLT_MAX;
+  CurrBest.score.f = FLT_MAX;
   CurrBest.geno.len = 0;
   rnd32_init((u32)time(NULL));
   setvbuf(stdout, (char *)NULL, _IONBF, 0); /* unbuffer stdout */
@@ -277,7 +198,7 @@ int main(int argc, char *argv[])
     int progress;
     pop_score(&Pop);  /* test it and sort best ones */
     indivs += sizeof Pop.indiv / sizeof Pop.indiv[0];
-    progress = Pop.indiv[0].score < CurrBest.score;
+    progress = Pop.indiv[0].score.f < CurrBest.score.f;
     if (progress || 0 == generation % 100) {
       /* display generation regularly or on progress */
       time_t t = time(NULL);
@@ -287,10 +208,10 @@ int main(int argc, char *argv[])
         /* only display best if it's changed; raises signal/noise ration */
         memcpy(&CurrBest, Pop.indiv, sizeof Pop.indiv[0]);
         gen_dump(&CurrBest.geno, stdout);
-        printf("->score=%g\n", Pop.indiv[0].score);
+        printf("->score=%g\n", Pop.indiv[0].score.f);
         /* show detailed score from best candidate */
         (void)gen_compile(&CurrBest.geno, x86);
-        (void)score((func)x86, 1);
+        (void)score_f(x86, 1);
         gen_since_best = 0;
       }
     }
@@ -302,17 +223,17 @@ int main(int argc, char *argv[])
        * retain CurrBest, against which all new candidates are judged */
       gen_dump(&CurrBest.geno, stdout);
       (void)gen_compile(&CurrBest.geno, x86);
-      (void)score((func)x86, 1);
+      (void)score_f(x86, 1);
       printf("No progress for %u generations, trying something new...\n", GEN_DEADEND);
       pop_gen(&Pop, 0, Cross_Rate, Mutate_Rate); /* start over! */
       gen_since_best = 0;
     }
     generation++;
     gen_since_best++;
-  } while (FLT_EPSILON < CurrBest.score); /* perfect match */
+  } while (FLT_EPSILON < CurrBest.score.f); /* perfect match */
   printf("done.\n");
   (void)gen_compile(&CurrBest.geno, x86);
-  (void)score((func)x86, 1);
+  (void)score_f(x86, 1);
   return 0;
 }
 
