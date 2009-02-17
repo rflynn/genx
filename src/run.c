@@ -121,29 +121,28 @@ u32 score(const void *f, int verbose)
 }
 
 /**
- * given a candidate function and an input, pass input as a parameter
- * and execute 'f'
+ * execute f(in); ensure no collateral damage
  */
 static u32 shim_i(const void *f, u32 in)
 {
   u32 out;
   asm volatile(
-    /* save and zero regs to prevent cheating by called function */
-    /* note: eax contains param 'in' */
-    "push %%ecx;"
-    "push %%edx;"
+    /*
+     * zero all registers to ensure candidate
+     * function doesn't have access to anything
+     * but zeroes
+     */
     "xor  %%ecx, %%ecx;"
     "xor  %%edx, %%edx;"
     /* pass in first parameter */
-    "movl %1, (%%esp);"
+    "movl %1,   (%%esp);"
     "xor  %%eax, %%eax;"
     "xor  %%ebx, %%ebx;"
     /* call function pointer */
     "call *%2;"
-    "pop  %%edx;"
-    "pop  %%ecx;"
     : "=a"(out)
-    : "b"(in), "m"(f));
+    : "b"(in), "m"(f)
+    : "ecx", "edx", "edi", "esi");
   return out;
 }
 
