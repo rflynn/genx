@@ -60,64 +60,11 @@ static float magic(float x)
   x = *(float*)&i;                /* convert bits back to float */
   x = x * (1.5f - xhalf * x * x); /* Newton step, repeating increases accuracy */
   return x;
-
-/*
-c7 45 f0 00 00 00 00    movl   $0x0,-0x10(%ebp)
-
-here is the what inv_sqrt compiles to with -O0:
-
-080483a4 <inv_sqrt>:
- 80483a4:       55                      push   %ebp
- 80483a5:       89 e5                   mov    %esp,%ebp
- 80483a7:       83 ec 1c                sub    $0x1c,%esp
- 80483aa:       b8 b4 6e be 4e          mov    $0x4ebe6eb4,%eax
- 80483af:       89 45 f8                mov    %eax,-0x8(%ebp)
- 80483b2:       d9 45 08                flds   0x8(%ebp)
- 80483b5:       d9 05 40 85 04 08       flds   0x8048540
- 80483bb:       de c9                   fmulp  %st,%st(1)
- 80483bd:       d9 5d fc                fstps  -0x4(%ebp)
- 80483c0:       8d 45 08                lea    0x8(%ebp),%eax
- 80483c3:       8b 00                   mov    (%eax),%eax
- 80483c5:       89 45 f4                mov    %eax,-0xc(%ebp)
- 80483c8:       8b 45 f4                mov    -0xc(%ebp),%eax
- 80483cb:       d1 f8                   sar    %eax
- 80483cd:       50                      push   %eax
- 80483ce:       db 04 24                fildl  (%esp)
- 80483d1:       8d 64 24 04             lea    0x4(%esp),%esp
- 80483d5:       d9 45 f8                flds   -0x8(%ebp)
- 80483d8:       de e1                   fsubp  %st,%st(1)
- 80483da:       d9 7d ee                fnstcw -0x12(%ebp)
- 80483dd:       0f b7 45 ee             movzwl -0x12(%ebp),%eax
- 80483e1:       b4 0c                   mov    $0xc,%ah
- 80483e3:       66 89 45 ec             mov    %ax,-0x14(%ebp)
- 80483e7:       d9 6d ec                fldcw  -0x14(%ebp)
- 80483ea:       db 5d e8                fistpl -0x18(%ebp)
- 80483ed:       d9 6d ee                fldcw  -0x12(%ebp)
- 80483f0:       8b 45 e8                mov    -0x18(%ebp),%eax
- 80483f3:       89 45 f4                mov    %eax,-0xc(%ebp)
- 80483f6:       8d 45 f4                lea    -0xc(%ebp),%eax
- 80483f9:       8b 00                   mov    (%eax),%eax
- 80483fb:       89 45 08                mov    %eax,0x8(%ebp)
- 80483fe:       d9 45 08                flds   0x8(%ebp)
- 8048401:       d8 4d fc                fmuls  -0x4(%ebp)
- 8048404:       d9 45 08                flds   0x8(%ebp)
- 8048407:       de c9                   fmulp  %st,%st(1)
- 8048409:       d9 05 44 85 04 08       flds   0x8048544
- 804840f:       de e1                   fsubp  %st,%st(1)
- 8048411:       d9 45 08                flds   0x8(%ebp)
- 8048414:       de c9                   fmulp  %st,%st(1)
- 8048416:       d9 5d 08                fstps  0x8(%ebp)
- 8048419:       8b 45 08                mov    0x8(%ebp),%eax
- 804841c:       89 45 e4                mov    %eax,-0x1c(%ebp)
- 804841f:       d9 45 e4                flds   -0x1c(%ebp)
- 8048422:       c9                      leave
- 8048423:       c3                      ret
-*/
-
 }
 #endif
 
-static s32 magic(s32 x)
+#if 0
+static s32 magic(s32 x[], unsigned n)
 {
   /*
    * we'll try to find a bitwise solution
@@ -129,35 +76,71 @@ static s32 magic(s32 x)
    * due to longer cycles per operation and the
    * requirement of all float loads be from memory
    */
-  float  y = *(float *)&x;  /* type-pun int->float */
-  float  f = 1.f/sqrtf(y);  /* calculate true value */
-  s32    s = *(s32 *)&f;    /* type-pun back */
-  return s;
+  float  a = *(float *)x;   /* type-pun int->float */
+  float  b = 1.f/sqrtf(a);  /* calculate true value */
+  s32    c = *(s32 *)&b;    /* type-pun back */
+  return c;
+}
+#endif
+
+#ifdef X86_USE_INT
+/* test multi-parameter */
+static s32 magic(s32 x[], unsigned n)
+{
+  //return x[0] + x[1];
+  //return x[0] * x[1];
+  //return (x[0] * x[1]) + x[2];
+  //return 0x55555555 ^ x[0]; // ha! found equivalence very quickly, i'm surprised
+  //return x[0] / x[1]; // found pretty quickly
+
+  //return x[0] / (((x[2] * x[1]) / x[0]) + 1); // found, not as quickly
+
+  //return x[0] ^ (x[1] << 16) ^ (x[2] >> 3);
+
+  return (s32)sqrt(x[0]);
+
+  //return 0x55555555 | x[0]; // not found yet
 }
 
-struct target Target[256] = {
-  {      ~0, 0 },
-  { INT_MAX, 0 },
-  {   65535, 0 },
-  {     255, 0 },
-  {       2, 0 },
-  {       1, 0 },
-  {       0, 0 },
+#endif
+
+struct target Target[] = {
+#ifdef X86_USE_FLOAT
+  /* air        co2            temp
+   * age        ppmv           var (C) */
+  {{   2342.f,  284.7f, 0.f }, -0.98f },
+  {{  50610.f,  189.3f, 0.f }, -5.57f },
+  {{ 103733.f,  225.9f, 0.f }, -4.50f },
+  {{ 151234.f,  197.0f, 0.f }, -6.91f },
+  {{ 201324.f,  226.4f, 0.f }, -1.49f },
+  {{ 401423.f,  277.1f, 0.f }, -1.09f },
+#else
+  /* random integer data */
+  {{      ~0, 1, 100 }, 0 },
+  {{ 0xaaaaa, 2, 200 }, 0 },
+  {{   65535, 3, 300 }, 0 },
+  {{     450, 4, 400 }, 0 },
+  {{      12, 5, 500 }, 0 },
+  {{       1, 6, 600 }, 0 },
+  {{       0, 7, 700 }, 0 }
+#endif
 };
 u32 TargetLen = 6;
 
 /********************* END INPUT PART *****************************/
 
+#ifdef X86_USE_INT
 static void calc_target(void)
 {
   unsigned i;
   printf("TargetLen <- %u\n", TargetLen);
   for (i = 0; i < TargetLen; i++) {
-    Target[i].out = magic(Target[i].in);
-    printf("Target %3u %11" PRIt " -> %11" PRIt "\n",
-      i, Target[i].in, Target[i].out);
+    Target[i].out = magic(Target[i].in, sizeof Target[i].in / sizeof Target[i].in[0]);
+    printf("Target %3u (%11" PRIt ",%11" PRIt ",%11" PRIt ") -> %11" PRIt "\n",
+      i, Target[i].in[0], Target[i].in[1], Target[i].in[2], Target[i].out);
   }
 }
+#endif
 
 int Dump = 0; /* verbosity level */
 
@@ -175,7 +158,7 @@ int main(int argc, char *argv[])
   /* show sizes of our core types in bytes */
   printf("sizeof Pop.indiv[0]=%u\n", sizeof Pop.indiv[0]);
   printf("sizeof Pop=%u\n", sizeof Pop);
-  printf("FLT_EPSILON=%f\n", FLT_EPSILON);
+  printf("FLT_EPSILON=%g\n", FLT_EPSILON);
   /* sanity-checks */
   assert(CHROMO_MAX > GEN_PREFIX_LEN + GEN_SUFFIX_LEN);
   /* one-time initialization */
@@ -188,7 +171,9 @@ int main(int argc, char *argv[])
    * if called we set Target[i].out = magic(Target[i].in)
    * if not called, Target[0..TargetLen-1].out assumed set
    */
+#ifdef X86_USE_INT
   calc_target();
+#endif
   GENOSCORE_SCORE(&CurrBest) = GENOSCORE_MAX;
   CurrBest.geno.len = 0;
   rnd32_init((u32)time(NULL));
@@ -203,7 +188,7 @@ int main(int argc, char *argv[])
     int progress;
     pop_score(&Pop);  /* test it and sort best ones */
     indivs += sizeof Pop.indiv / sizeof Pop.indiv[0];
-    progress = -1 == genoscore_cmp(&Pop.indiv[0], &CurrBest);
+    progress = -1 == genoscore_lencmp(&Pop.indiv[0], &CurrBest);
     if (progress || 0 == generation % 100) {
       /* display generation regularly or on progress */
       time_t t = time(NULL);
@@ -236,7 +221,10 @@ int main(int argc, char *argv[])
     }
     generation++;
     gen_since_best++;
-  } while (!GENOSCORE_MATCH(&CurrBest));
+  } while (
+    !GENOSCORE_MATCH(&CurrBest)
+    || CurrBest.geno.len > GEN_PREFIX_LEN + 1 + GEN_SUFFIX_LEN /* shortest possible solution (excluding identity) */
+  );
   printf("done.\n");
   (void)gen_compile(&CurrBest.geno, x86);
   (void)score(x86, 1);

@@ -60,9 +60,12 @@ static void gen_mutate(genotype *g, const double mutate_rate)
    * calculate the length of the area to be mutated;
    * calculate the length of the replacement;
    * this allows for insertions, deletions and replacements
+   *
+   * NOTE: g->len does NOT include the SUFFIX entries in this
+   *       context
    */
-  u32 doff   = randr(GEN_PREFIX_LEN, GEN_PREFIX_LEN + g->len - GEN_SUFFIX_LEN),
-      /* NOTE: incorporate mutate_rate somehow! */
+  u32 doff   = randr(GEN_PREFIX_LEN, g->len),
+      /* TODO: incorporate mutate_rate somehow! */
       dlen   = (u32)(rand01() * (g->len - doff)),
       slen   = (u32)(rand01() *
         (CHROMO_MAX - GEN_SUFFIX_LEN - (g->len - dlen))),
@@ -70,6 +73,10 @@ static void gen_mutate(genotype *g, const double mutate_rate)
 #if 0
   printf("g->len=%2u doff=%2u dlen=%2u slen=%2u suflen=%2u\n",
     g->len, doff, dlen, slen, suflen);
+  assert(g->len <= CHROMO_MAX);
+  assert(doff   >= GEN_PREFIX_LEN);
+  assert(doff   <= CHROMO_MAX);
+  assert(doff   <= g->len);
   assert(g->len + (int)(slen - dlen) <= CHROMO_MAX - GEN_SUFFIX_LEN);
 #endif
   if (suflen > 0)
@@ -236,7 +243,7 @@ void pop_score(struct pop *p)
     GENOSCORE_SCORE(&p->indiv[i]) = score(x86, 0);
   }
   qsort(p->indiv, sizeof p->indiv / sizeof p->indiv[0],
-                                    sizeof p->indiv[0], genoscore_cmp);
+                                    sizeof p->indiv[0], genoscore_lencmp);
 }
 
 #if 0

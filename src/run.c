@@ -18,15 +18,20 @@ extern u32 TargetLen;
  * given a candidate function and an input, pass input as a parameter
  * and execute 'f'
  */
-static float shim_f(const void *f, float in)
+static float shim_f(const void *f, float a, float b, float c)
 {
   float out;
   asm volatile(
-    /* pass in first parameter */
-    "fld  %1;"
-    "fstp (%%esp);"
+    /* pass in parameter(s) */
+    "fld  %2;"
+    "fstp    (%%esp);"
+    "fld  %3;"
+    "fstp 0x4(%%esp);"
+    "fld  %4;"
+    "fstp 0x8(%%esp);"
+
     /* call function pointer */
-    "call *%2;"
+    "call *%1;"
     /* store st(0) in out */
     "fst   %0;"
     /*
@@ -43,7 +48,7 @@ static float shim_f(const void *f, float in)
     "ffree %%st(6);"
     "ffree %%st(7);"
     : "=m"(out)
-    : "m"(in), "r"(f));
+    : "r"(f), "m"(a), "m"(b), "m"(c));
   return out;
 }
 
@@ -57,17 +62,14 @@ float score(const void *f, int verbose)
   float scor = 0.f;
   u32 i;
   if (verbose || Dump >= 2)
-    printf("%11s %11s %11s %11s %11s\n"
-           "----------- ----------- ----------- ----------- -----------\n",
-           "in", "target", "actual", "diff", "diffsum");
+    printf("%11s %11s %11s %11s %11s %11s %11s\n"
+           "----------- ----------- ----------- "
+           "----------- ----------- ----------- -----------\n",
+           "a", "b", "c", "target", "actual", "diff", "diffsum");
   for (i = 0; i < TargetLen; i++) {
     float diff,   /* difference between target and sc */
           sc;
-    if (verbose || Dump >= 2)
-      printf("%11" PRIt " %11" PRIt " ", Target[i].in, Target[i].out);
-    sc = shim_f(f, Target[i].in);
-    if (verbose || Dump >= 2)
-      printf("%11g ", sc);
+    sc = shim_f(f, Target[i].in[0], Target[i].in[1], Target[i].in[2]);
     if (!isfinite(sc)) {
       scor = FLT_MAX;
       if (verbose || Dump >= 2)
@@ -83,7 +85,9 @@ float score(const void *f, int verbose)
     }
     scor += diff;
     if (verbose || Dump >= 2)
-      printf("%11g %11g\n", diff, scor);
+      printf("%11g %11g %11g %11g %11g %11g %11g\n",
+        Target[i].in[0], Target[i].in[1], Target[i].in[2],
+        Target[i].out, sc, diff, scor);
   }
   if (verbose || Dump >= 2)
     printf("score=%g\n", scor);
@@ -92,7 +96,7 @@ float score(const void *f, int verbose)
 
 #else /* integer */
 
-static u32 shim_i(const void *, u32 in);
+static u32 shim_i(const void *, u32, u32, u32);
 
 /**
  * given a candidate function, test it against all input and return a
@@ -104,16 +108,19 @@ u32 score(const void *f, int verbose)
   u32 scor = 0;
   u32 i;
   if (verbose || Dump >= 2)
-    printf("%11s %11s %11s %11s %11s\n"
-           "----------- ----------- ----------- ----------- -----------\n",
-           "in", "target", "actual", "diff", "diffsum");
+    printf("%11s %11s %11s %11s %11s %11s %11s\n"
+           "----------- ----------- ----------- "
+           "----------- ----------- ----------- -----------\n",
+           "a", "b", "c", "target", "actual", "diff", "diffsum");
   for (i = 0; i < TargetLen; i++) {
-    u32 sc   = shim_i(f, Target[i].in),
+    u32 sc   = shim_i(f, Target[i].in[0], Target[i].in[1], Target[i].in[2]),
         diff = popcnt(sc ^ Target[i].out);
     scor += diff;
     if (verbose || Dump >= 2)
-      printf(" 0x%08" PRIx32 "  0x%08" PRIx32 "  0x%08" PRIx32 " %11" PRIu32 " %11" PRIu32 "\n",
-        Target[i].in, Target[i].out, sc, diff, scor);
+      printf(" 0x%08" PRIx32 "  0x%08" PRIx32 "  0x%08" PRIx32
+            "  0x%08" PRIx32 "  0x%08" PRIx32 " %11" PRIu32 " %11" PRIu32 "\n",
+        Target[i].in[0], Target[i].in[1], Target[i].in[2],
+        Target[i].out, sc, diff, scor);
   }
   if (verbose || Dump >= 2)
     printf("score=%u\n", scor);
@@ -123,7 +130,7 @@ u32 score(const void *f, int verbose)
 /**
  * execute f(in); ensure no collateral damage
  */
-static u32 shim_i(const void *f, u32 in)
+static u32 shim_i(const void *f, u32 x, u32 y, u32 z)
 {
   u32 out;
   asm volatile(
@@ -136,20 +143,36 @@ static u32 shim_i(const void *f, u32 in)
      * the ebx register, so we'll just push and
      * pop it manually...
      */
+    //"push %%eax;"
     "push %%ebx;"
-    "xor  %%ecx, %%ecx;"
-    "xor  %%edx, %%edx;"
-    /* pass in first parameter */
-    "movl %1,   (%%esp);"
+    "push %%ecx;"
+    "push %%edx;"
+    "push %%edi;"
+    "push %%esi;"
+    /* pass in parameters */
+    "movl %2,0x8(%%esp);"
+    "movl %3,0x4(%%esp);"
+    "movl %4,   (%%esp);"
+    /* zero regs */
     "xor  %%eax, %%eax;"
     "xor  %%ebx, %%ebx;"
+    "xor  %%ecx, %%ecx;"
+    "xor  %%edx, %%edx;"
+    "xor  %%edi, %%edi;"
+    "xor  %%esi, %%esi;"
     /* call function pointer */
-    "call *%2;"
+    "cpuid;"
+    "call *%1;"
     /* restore ebx */
-    "pop %%ebx;"
+    "pop  %%esi;"
+    "pop  %%edi;"
+    "pop  %%edx;"
+    "pop  %%ecx;"
+    "pop  %%ebx;"
+    //"pop  %%eax;"
     : "=a"(out)
-    : "a"(in), "m"(f)
-    : "ecx", "edx", "edi", "esi");
+    : "m"(f), "c"(x), "d"(y), "D"(z));
+    //: "ecx", "edx", "edi", "esi");
   return out;
 }
 

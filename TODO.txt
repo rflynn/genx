@@ -2,36 +2,7 @@
 # $Id$
 
 TODO:
-
- * aha, there's a fairly simple optimization we could perform that should
-   noticably increase performance: limit the number of data points tested
-   to (#passed + 1)
-
-   that is, begin by only testing a single data point; once there are one or
-   more functions that match it exactly, test 2 and so on. in this manner,
-   we eliminate a huge amount of work and end up with the same result.
-
-   also a similar but even easier optimization is to test the largest values
-   first (if possible), as overflow/output differences will be more quickly
-   noticed.
-
- * idea for possibly better "distance" scoring
   
-    currently we use the arithmetic distance between a target output and
-    a function's real output, this works well.
-
-    however, fundamentally, this assigns relative value to bits based
-    on their position; given two outputs, one differing from the target by
-    a single low bit and the other by a single high bit will result in the
-    "high bit" difference being considered very far away from the target.
-
-    this makes sense if only considering arithmetic/algebraic operations,
-    but not if we consider bitwise operations (rotations, xor, etc.), because
-    we should treat all bits of equal importance.
-
-    therefore, when considering bitwise operations, we should devise some
-    distance scheme that counts only the number of bits differing from
-    the target!
 
  * add support for the saving/retrieval of jobs, which will allow tasks to be
    resumed if the program crashes, and would even allow the transfer of jobs
@@ -50,6 +21,10 @@ TODO:
 
         this shouldn't be too hard, too CPU-intensive or too complex, but
         it will get people more excited about using it.
+
+ * modify mutation to be more interesting; for example, given an
+  (+ 0x01234567) operation, maybe just mutate the number, or part
+  of the number. or maybe modify the operation but leave the number.
 
  * define a proper interface so we can lib-ize the evolution/x86 part and can
    separate the "problem" we are trying to solve into a separate program.

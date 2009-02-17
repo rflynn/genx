@@ -22,13 +22,13 @@ typedef uint64_t u64;
 #ifdef X86_USE_FLOAT
 # define PRIt "g"
 struct target {
-  float in,
+  float in[3],
         out;
 };
 #else
 # define PRIt "u"
 struct target {
-  s32 in,
+  s32 in[3],
       out;
 };
 #endif

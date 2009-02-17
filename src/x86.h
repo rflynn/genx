@@ -102,7 +102,9 @@ enum {
   ENTER,
   PUSH_EBP,
   MOV_ESP_EBP,
-  MOV_8_EBP_EAX,  /* load eax with first parameter */
+  MOV_8_EBP_EAX,  /* load eax with first parameter  */
+  MOV_C_EBP_EBX,  /* load ebx with second parameter */
+  MOV_10_EBP_ECX, /* load ecx with third parameter  */
   SUB_14_ESP,     /* reserve space for local variable, 
                    * required to use random floating point
                    * datum as fp ops cannot be supplied

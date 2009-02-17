@@ -105,6 +105,8 @@ const struct x86 X86[X86_COUNT] = {
   { "push    %%ebp"           , { 0x55             }, 1, 0, 0, 0, I_86,  0,   0   },
   { "mov     %%esp, %%ebp"    , { 0x89, 0xe5       }, 2, 0, 0, 0, I_86,  0,   0   },
   { "mov     0x8(%%ebp), %%eax",{ 0x8b, 0x45, 0x08 }, 3, 0, 0, 0, I_86,  0,   0   },
+  { "mov     0xc(%%ebp), %%ebx",{ 0x8b, 0x5d, 0x0c }, 3, 0, 0, 0, I_86,  0,   0   },
+  { "mov     0x10(%%ebp), %%ecx",{0x8b, 0x4d, 0x10 }, 3, 0, 0, 0, I_86,  0,   0   },
   { "sub     $0x14, %%esp"    , { 0x83, 0xec, 0x14 }, 3, 0, 0, 0, I_86,  0,   0   },
   /* function suffix */
   { "add     $0x14, %%esp"    , { 0x83, 0xc4, 0x14 }, 3, 0, 0, 0, I_86,  FLT, 0   },
