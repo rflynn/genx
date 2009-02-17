@@ -1,0 +1,195 @@
+
+static s32 magic(s32 x)
+{
+  /*
+   * we'll try to find an int-only means of
+   * calculating 1.f/sqrtf(x)
+   * in order to try to beat the quake3
+   * InvSqrt hack
+   */
+  float  f = 1.f/sqrtf((float)x);
+  s32    s = *(s32 *)&f;
+  return s;
+}
+
+from metallic:
+  GENERATION  6038  395771904 genotypes @Tue Feb 24 14:46:15 2009
+   0 c8 00 00 00                     enter
+   1 8b 45 08                        mov     0x8(%ebp), %eax
+   2 6b d9 54                        imul    0x54, %ebx, %ecx
+   3 0f 42 c2                        cmovb   %eax, %edx
+   4 0f 46 cb                        cmovna  %ecx, %ebx
+   5 6b ca d1                        imul    0xd1, %ecx, %edx
+   6 0f 43 d0                        cmovnb  %edx, %eax
+   7 0f af da                        imul    %ebx, %edx
+   8 29 cb                           sub     %ecx, %ebx
+   9 0f 4c c0                        cmovnge %eax, %eax
+  10 0f 4e db                        cmovng  %ebx, %ebx
+  11 0f ba e3 08                     bt      0x08, %ebx
+  12 0f ba e0 f6                     bt      0xf6, %eax
+  13 0f 42 c9                        cmovb   %ecx, %ecx
+  14 c1 d8 64                        rcr     0x64, %eax
+  15 0f 4a ca                        cmovp   %ecx, %edx
+  16 0f 4c da                        cmovnge %ebx, %edx
+  17 c1 d1 85                        rcl     0x85, %ecx
+  18 0f 42 ca                        cmovc   %ecx, %edx
+  19 c1 e2 89                        shl     0x89, %edx
+  20 8b c0                           mov     %eax, %eax
+  21 0f 4f db                        cmovg   %ebx, %ebx
+  22 0f ba f8 f7                     btc     0xf7, %eax
+  23 6b d1 f8                        imul    0xf8, %edx, %ecx
+  24 0f 42 c2                        cmovb   %eax, %edx
+  25 0f ba f0 69                     btr     0x69, %eax
+  26 0f ba e2 08                     bt      0x08, %edx
+  27 0f 42 d1                        cmovnae %edx, %ecx
+  28 29 d9                           sub     %ebx, %ecx
+  29 0f 46 da                        cmovna  %ebx, %edx
+  30 0f bb c8                        btc     %ecx, %eax
+  31 0f ba f8 b2                     btc     0xb2, %eax
+  32 0f ba fa a6                     btc     0xa6, %edx
+  33 0f 4e da                        cmovle  %ebx, %edx
+  34 0f ba f0 41                     btr     0x41, %eax
+  35 8b da                           mov     %ebx, %edx
+  36 0f bb cb                        btc     %ecx, %ebx
+  37 01 c8                           add     %ecx, %eax
+  38 29 ca                           sub     %ecx, %edx
+  39 0f 42 d9                        cmovc   %ebx, %ecx
+  40 0f 42 c1                        cmovnae %eax, %ecx
+  41 0f 4b d8                        cmovpo  %ebx, %eax
+  42 0f ba fa 2d                     btc     0x2d, %edx
+  43 0f 4d c8                        cmovnl  %ecx, %eax
+  44 81 e2 7e 52 00 00               and     0x0000527e, %edx
+  45 0f ba fb 94                     btc     0x94, %ebx
+  46 0f 43 c3                        cmovnb  %eax, %ebx
+  47 0f 4f d0                        cmovnle %edx, %eax
+  48 0f 42 d0                        cmovb   %edx, %eax
+  49 0f 4b c8                        cmovpo  %ecx, %eax
+  50 0f ba f9 27                     btc     0x27, %ecx
+  51 0f 47 d1                        cmova   %edx, %ecx
+  52 0f a3 d8                        bt      %ebx, %eax
+  53 81 f3 45 42 00 00               xor     %ebx
+  54 0f ba fa 7e                     btc     0x7e, %edx
+  55 0f 4b ca                        cmovpo  %ecx, %edx
+  56 0f 4d da                        cmovge  %ebx, %edx
+  57 83 cb 02                        add     0x02, %ecx, %ebx
+  58 0f 41 d2                        cmovno  %edx, %edx
+  59 0f ba fb 75                     btc     0x75, %ebx
+  60 0f 43 c3                        cmovnb  %eax, %ebx
+  61 c9                              leave
+  62 c3                              ret
+  ->score=17
+           in      target      actual        diff     diffsum
+  ----------- ----------- ----------- ----------- -----------
+   0xffffffff  0xffffffff  0xffffffff           0           0
+   0x7fffffff  0x7fffffff  0x7fffffff           0           0
+   0x0000ffff  0x60b5054d  0xe0b50ded           4           4
+   0x000000ff  0x62b55fba  0xe0b55dba           3           7
+   0x00000002  0x64800000  0x40840041           5          12
+   0x00000001  0x64b504f3  0x60b400a3           5          17
+  score=17
+GENERATION  4900  240893952 genotypes @Mon Feb 16 19:09:39 2009
+  0 c8 00 00 00                     enter
+  1 8b 45 08                        mov     0x8(%ebp), %eax
+  2 c1 ca e8                        ror     0xe8, %edx
+  3 0f 4b d0                        cmovpo  %edx, %eax
+  4 0f af db                        imul    %ebx, %ebx
+  5 83 d2 13                        add     0x13, %edx, %edx
+  6 33 d8                           xor     %ebx, %eax
+  7 0f 46 da                        cmovna  %ebx, %edx
+  8 0f 4a d1                        cmovp   %edx, %ecx
+  9 29 c9                           sub     %ecx, %ecx
+ 10 39 d3                           cmp     %edx, %ebx
+ 11 0f 46 d9                        cmovna  %ebx, %ecx
+ 12 0f 4c da                        cmovnge %ebx, %edx
+ 13 0f b3 d8                        btr     %ebx, %eax
+ 14 0f a3 d8                        bt      %ebx, %eax
+ 15 81 f3 aa 9f 00 00               xor     %ebx
+ 16 f7 d1                           not     %ecx
+ 17 0f bd ca                        bsr     %ecx, %edx
+ 18 81 f3 e0 94 00 00               xor     %ebx
+ 19 0f 42 db                        cmovnae %ebx, %ebx
+ 20 0f 43 d9                        cmovnb  %ebx, %ecx
+ 21 01 d3                           add     %edx, %ebx
+ 22 0f 4d c9                        cmovnl  %ecx, %ecx
+ 23 0f 4f da                        cmovg   %ebx, %edx
+ 24 c1 cb 07                        ror     0x07, %ebx
+ 25 33 c8                           xor     %ecx, %eax
+ 26 6b c9 c6                        imul    0xc6, %ecx, %ecx
+ 27 0f c1 c2                        xadd    %eax, %edx
+ 28 0f 4b c1                        cmovnp  %eax, %ecx
+ 29 0f b3 c1                        btr     %eax, %ecx
+ 30 0f ba f2 54                     btr     0x54, %edx
+ 31 29 d9                           sub     %ebx, %ecx
+ 32 0f 4a c8                        cmovp   %ecx, %eax
+ 33 81 f8 55 2f 00 00               cmp     0x00002f55, %eax
+ 34 0f 4d c2                        cmovnl  %eax, %edx
+ 35 6b ca cc                        imul    0xcc, %ecx, %edx
+ 36 0f 47 cb                        cmovnbe %ecx, %ebx
+ 37 0f 42 c0                        cmovnae %eax, %eax
+ 38 0f a3 d3                        bt      %edx, %ebx
+ 39 0f 4e d3                        cmovng  %edx, %ebx
+ 40 0f 4d c1                        cmovnl  %eax, %ecx
+ 41 0f 42 c9                        cmovnae %ecx, %ecx
+ 42 81 f1 25 8a 00 00               xor     %ecx
+ 43 29 d1                           sub     %edx, %ecx
+ 44 c1 da 94                        rcr     0x94, %edx
+ 45 f7 d8                           neg     %eax
+ 46 0f 4b db                        cmovpo  %ebx, %ebx
+ 47 0f 42 d0                        cmovnae %edx, %eax
+ 48 0f 4e c2                        cmovng  %eax, %edx
+ 49 0f a3 cb                        bt      %ecx, %ebx
+ 50 81 fb 20 32 00 00               cmp     0x00003220, %ebx
+ 51 0f 40 db                        cmovo   %ebx, %ebx
+ 52 0f 47 cb                        cmovnbe %ecx, %ebx
+ 53 c1 c8 22                        ror     0x22, %eax
+ 54 0f bb c0                        btc     %eax, %eax
+ 55 0f ba f9 34                     btc     0x34, %ecx
+ 56 0f b3 d0                        btr     %edx, %eax
+ 57 0f bb c8                        btc     %ecx, %eax
+ 58 c1 e2 8e                        shl     0x8e, %edx
+ 59 0f 42 d0                        cmovc   %edx, %eax
+ 60 81 f9 30 ec 00 00               cmp     0x0000ec30, %ecx
+ 61 0f a3 d0                        bt      %edx, %eax
+ 62 0f 42 d9                        cmovnae %ebx, %ecx
+ 63 c1 c9 ff                        ror     0xff, %ecx
+ 64 87 d2                           xchg    %edx, %edx
+ 65 29 d9                           sub     %ebx, %ecx
+ 66 81 f1 c8 ff 00 00               xor     %ecx
+ 67 0f bb ca                        btc     %ecx, %edx
+ 68 0f 4a da                        cmovpe  %ebx, %edx
+ 69 8b ca                           mov     %ecx, %edx
+ 70 0b c1                           or      %eax, %ecx
+ 71 0f 47 c9                        cmova   %ecx, %ecx
+ 72 0f 47 ca                        cmova   %ecx, %edx
+ 73 0f af d9                        imul    %ebx, %ecx
+ 74 83 ca e9                        add     0xe9, %ecx, %edx
+ 75 0f a3 d8                        bt      %ebx, %eax
+ 76 81 f8 d2 ce 00 00               cmp     0x0000ced2, %eax
+ 77 0f 47 c8                        cmovnbe %ecx, %eax
+ 78 0f a3 c8                        bt      %ecx, %eax
+ 79 0f ba f0 b3                     btr     0xb3, %eax
+ 80 0f ba f0 b1                     btr     0xb1, %eax
+ 81 0f bb d3                        btc     %edx, %ebx
+ 82 0f 45 d0                        cmovnz  %edx, %eax
+ 83 0f 41 d8                        cmovno  %ebx, %eax
+ 84 0f ba f0 b8                     btr     0xb8, %eax
+ 85 83 db 09                        add     0x09, %ebx, %ebx
+ 86 0f 4a c0                        cmovp   %eax, %eax
+ 87 0f 4e c1                        cmovng  %eax, %ecx
+ 88 0f ba fb 7f                     btc     0x7f, %ebx
+ 89 0f ba f3 06                     btr     0x06, %ebx
+ 90 0f b3 c8                        btr     %ecx, %eax
+ 91 0f 43 d2                        cmovnb  %edx, %edx
+ 92 0f 47 c3                        cmovnbe %eax, %ebx
+ 93 c9                              leave
+ 94 c3                              ret
+         in      target      actual        diff     diffsum
+----------- ----------- ----------- ----------- -----------
+ 0xffffffff  0x0804852c  0x0004810e           4           4
+ 0x7fffffff  0x3f24eea9  0x3f25efa9           2           6
+ 0x0000ffff  0xffffffff  0x7fffffff           1           7
+ 0x000000ff  0x7fffffff  0x7fffffff           0           7
+ 0x00000002  0x60b5054e  0x00950156           6          13
+ 0x00000001  0x62b55fba  0x72f5dffa           4          17
+score=17
+

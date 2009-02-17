@@ -1,0 +1,36 @@
+# ex: set ff=dos ts=2 et:
+# $Id$
+
+Observations on the Generations of Functions By Stochastic Means
+-----------------------------------------------------------------------------
+
+* The maximum number of operations in a function has a definite effect
+  on how long it takes to find a function.
+
+    A simple function, given a too-large space, takes much longer to find.
+    A complex function, given a too-short space, is impossible to find.
+
+  Can we work in some sort of algorithm to gradually increase the maximum
+  size of the function with each N generations? This may help nail down
+  some simple operations before we build on it, rather than try and generate
+  an entire complex function from scratch.
+
+* On favoring shorter equivalent solutions...
+
+  Favoring shorter solutions cost a little more but is definitely worth
+  it, as there are infinitely many infinitely complex, garbage-filled
+  longer equivalences for every program; best to let the machine find
+  it than decode it by hand (which one still has the option of doing
+  anyway).
+
+  HOWEVER, my guess is that while this is worthwhile for integer-based
+  solutions, it is NOT for floating-point solutions, as the odds of finding
+  an exactly equivalent score are low. But I could be wrong...
+
+* On randomness...
+
+  "metallic" ran the app for an hour and had an OK answer, but found a bug.
+  I fixed the bug, he pulled, compiled and restarted the program from
+  scratch. He instantly had a better solution than the previous one.
+
+
