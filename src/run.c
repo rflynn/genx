@@ -141,8 +141,8 @@ static u32 shim_i(const void *f, u32 in)
     /* call function pointer */
     "call *%2;"
     : "=a"(out)
-    : "b"(in), "m"(f)
-    : "ecx", "edx", "edi", "esi");
+    : "a"(in), "m"(f)
+    : "ebx", "ecx", "edx", "edi", "esi");
   return out;
 }
 

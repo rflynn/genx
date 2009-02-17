@@ -166,6 +166,7 @@ enum {
   CMOVGE,
   CMOVL,
   CMOVLE,
+#if 0
   CMOVNA,
   CMOVNAE,
   CMOVNB,
@@ -180,6 +181,7 @@ enum {
   CMOVNP,
   CMOVNS,
   CMOVNZ,
+#endif
   CMOVO,
   CMOVP,
   CMOVPE,

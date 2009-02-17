@@ -160,6 +160,7 @@ const struct x86 X86[X86_COUNT] = {
   { "cmovge "                 , { 0x0f, 0x4d       }, 2, 1, 0, 0, I_686, INT, ALG },
   { "cmovl  "                 , { 0x0f, 0x4c       }, 2, 1, 0, 0, I_686, INT, ALG },
   { "cmovle "                 , { 0x0f, 0x4e       }, 2, 1, 0, 0, I_686, INT, ALG },
+#if 0
   { "cmovna "                 , { 0x0f, 0x46       }, 2, 1, 0, 0, I_686, INT, ALG },
   { "cmovnae"                 , { 0x0f, 0x42       }, 2, 1, 0, 0, I_686, INT, ALG },
   { "cmovnb "                 , { 0x0f, 0x43       }, 2, 1, 0, 0, I_686, INT, ALG },
@@ -174,6 +175,7 @@ const struct x86 X86[X86_COUNT] = {
   { "cmovnp "                 , { 0x0f, 0x4b       }, 2, 1, 0, 0, I_686, INT, ALG },
   { "cmovns "                 , { 0x0f, 0x49       }, 2, 1, 0, 0, I_686, INT, ALG },
   { "cmovnz "                 , { 0x0f, 0x45       }, 2, 1, 0, 0, I_686, INT, ALG },
+#endif
   { "cmovo  "                 , { 0x0f, 0x40       }, 2, 1, 0, 0, I_686, INT, ALG },
   { "cmovp  "                 , { 0x0f, 0x4a       }, 2, 1, 0, 0, I_686, INT, ALG },
   { "cmovpe "                 , { 0x0f, 0x4a       }, 2, 1, 0, 0, I_686, INT, ALG },
