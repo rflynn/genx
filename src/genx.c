@@ -29,7 +29,6 @@
 #define MINIMIZE_LEN  1         /* do we care about finding the shortest solution, or just any match? */
 
 extern const struct x86 X86[X86_COUNT];
-extern int genoscore_cmp(const void *, const void *);
 
 /******************* BEGIN INPUT PART *****************************/
 
@@ -116,16 +115,31 @@ struct target Target[] = {
   {{ 401423.f,  277.1f, 0.f }, -1.09f },
 #else
   /* random integer data */
-  {{      ~0, 1, 100 }, 0 },
-  {{ 0xaaaaa, 2, 200 }, 0 },
-  {{   65535, 3, 300 }, 0 },
-  {{     450, 4, 400 }, 0 },
-  {{      12, 5, 500 }, 0 },
-  {{       1, 6, 600 }, 0 },
-  {{       0, 7, 700 }, 0 }
+  {{ 0xffffffff, 0, 0 }, 0 },
+  {{ 0x7fffffff, 0, 0 }, 0 },
+  {{ 0x30305123, 0, 0 }, 0 },
+  {{ 0x12345678, 0, 0 }, 0 },
+  {{    0xaaaaa, 0, 0 }, 0 },
+  {{    0xaaaaa, 0, 0 }, 0 },
+  {{    0x55555, 0, 0 }, 0 },
+  {{    0x44444, 0, 0 }, 0 },
+  {{    0x33333, 0, 0 }, 0 },
+  {{    0x11111, 0, 0 }, 0 },
+  {{      65535, 0, 0 }, 0 },
+  {{        450, 0, 0 }, 0 },
+  {{        100, 0, 0 }, 0 },
+  {{         65, 0, 0 }, 0 },
+  {{         12, 0, 0 }, 0 },
+  {{          8, 0, 0 }, 0 },
+  {{          5, 0, 0 }, 0 },
+  {{          4, 0, 0 }, 0 },
+  {{          3, 0, 0 }, 0 },
+  {{          2, 0, 0 }, 0 },
+  {{          1, 0, 0 }, 0 },
+  {{          0, 0, 0 }, 0 }
 #endif
 };
-u32 TargetLen = 6;
+u32 TargetLen = sizeof Target  / sizeof Target[0];
 
 /********************* END INPUT PART *****************************/
 
@@ -143,6 +157,7 @@ static void calc_target(void)
 #endif
 
 int Dump = 0; /* verbosity level */
+static time_t Start;
 
 int main(int argc, char *argv[])
 {
@@ -179,6 +194,8 @@ int main(int argc, char *argv[])
   rnd32_init((u32)time(NULL));
   setvbuf(stdout, (char *)NULL, _IONBF, 0); /* unbuffer stdout */
   memset(&Pop, 0, sizeof Pop);
+  nice(+19); /* be as polite to any other programs as possible */
+  Start = time(NULL);
   pop_gen(&Pop, 0, Cross_Rate, Mutate_Rate); /* seminal generation */
   /* evolve */
   /*
@@ -192,8 +209,8 @@ int main(int argc, char *argv[])
     if (progress || 0 == generation % 100) {
       /* display generation regularly or on progress */
       time_t t = time(NULL);
-      printf("GENERATION %5" PRIu32 " %10" PRIu64 " genotypes @%s",
-        generation, indivs, ctime(&t));
+      printf("GENERATION %5" PRIu32 " %10" PRIu64 " genotypes (%.1f/sec) @%s",
+        generation, indivs, (double)indivs / (t - Start), ctime(&t));
       if (progress) {
         /* only display best if it's changed; raises signal/noise ration */
         memcpy(&CurrBest, Pop.indiv, sizeof Pop.indiv[0]);

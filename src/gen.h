@@ -49,6 +49,8 @@ void pop_gen(struct pop *p,
              const double mutate_rate);
 
 void pop_score(struct pop *p);
+int genoscore_cmp   (const void *, const void *);
+int genoscore_lencmp(const void *, const void *);
 
 #ifdef X86_USE_FLOAT
 # define GENOSCORE_SCORE(gs)  ((gs)->score.f)
