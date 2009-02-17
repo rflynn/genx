@@ -115,7 +115,8 @@ void pop_gen(struct pop *p,
     }
   } else {
     /*
-     * initial generation, calculate completely random
+     * initial generation (or re-generation from scratch), do not
+     * use a 'src' element
      */
     for (i = keep; i < sizeof p->indiv / sizeof p->indiv[0]; i++) {
       gen_gen(&p->indiv[i].geno, NULL, cross_rate, mutate_rate);
@@ -124,6 +125,9 @@ void pop_gen(struct pop *p,
   }
 }
 
+/*
+ *
+ */
 void gen_dump(const struct genotype *g, FILE *f)
 {
   char hex[32],
@@ -147,7 +151,7 @@ void gen_dump(const struct genotype *g, FILE *f)
     memset(h, ' ', 32 - (h - hex));
     h += 32 - (h - hex);
     *h = '\0';
-    fprintf(f, "%2" PRIu32 " %s", i, hex);
+    fprintf(f, "%3" PRIu32 " %s", i, hex);
     fprintf(f, x->descr, *(u32 *)&g->chromo[i].data);
     if (x->modrmlen) {
       char modbuf[16];

@@ -1,8 +1,14 @@
 # ex: set ff=dos ts=2 et:
 # $Id$
+ o=O   
 0===0  
-0===0  About
+0===0  README
  O=o   ----------------------------------------------------------------------
+  O    
+ o=O   For the impatient:
+0===0   git clone git://github.com/pizza/genx.git ~/genx && cd ~/genx/src && make && ./genx
+0===0   sudo renice +19 $(pgrep genx)
+ O=o   
   O    
  o=O   genx generates functions in x86 machine language via a genetic 
 0===0  algorithm.

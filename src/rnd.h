@@ -15,6 +15,7 @@
 
 void rnd32_init(u32);
 u32  rnd32(void);
+//#define rnd32() random()
 
 u32  randr(u32 min, u32 max);
 

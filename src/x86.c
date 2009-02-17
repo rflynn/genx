@@ -182,8 +182,8 @@ const struct x86 X86[X86_COUNT] = {
   { "cmovz  "                 , { 0x0f, 0x44       }, 2, 1, 0, 0, I_686, INT, ALG },
 #endif
 
-  { "lea   0x8(%%ebp), %%eax" , { 0x8d, 0x45, 0x08 }, 3, 0, 0, 0, I_86,  0,   0   },
-  { "mov   %%eax, -0x14(%%ebp)",{ 0x8b, 0x45, 0xce }, 3, 0, 0, 0, I_86,  0,   0   },
+  { "lea     0x8(%%ebp), %%eax" ,{ 0x8d, 0x45, 0x08}, 3, 0, 0, 0, I_86,  0,   0   },
+  { "mov     %%eax, -0x14(%%ebp)",{0x8b, 0x45, 0xce}, 3, 0, 0, 0, I_86,  0,   0   },
 
 /*
  * x86 floating point operations

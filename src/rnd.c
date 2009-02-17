@@ -10,7 +10,20 @@
 #include <assert.h>
 #include "rnd.h"
 
+#if 0
+/*
+ * just wrap built-ins srandom()/random()
+ */
+void rnd32_init(u32 seed)
+{
+  srandom(seed);
+}
+#endif
+
 #if 1
+/*
+ * custom, unstrusted, fast bitwise prng from the web :/
+ */
 static u32 rndhi,
            rndlo;
 /**
@@ -30,7 +43,10 @@ void rnd32_init(u32 seed)
   rndlo = rndhi ^ 0x49616E42;
 }
 
-#else
+#endif
+
+#if 0
+
 /**
  * Subject: Random numbers in C: Some suggestions.
  * Date: Tue, 12 Jan 1999 09:37:37 -0500
