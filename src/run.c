@@ -131,7 +131,12 @@ static u32 shim_i(const void *f, u32 in)
      * zero all registers to ensure candidate
      * function doesn't have access to anything
      * but zeroes
+     *
+     * NOTE: Apple doesn't like when i clobber
+     * the ebx register, so we'll just push and
+     * pop it manually...
      */
+    "push %%ebx;"
     "xor  %%ecx, %%ecx;"
     "xor  %%edx, %%edx;"
     /* pass in first parameter */
@@ -140,9 +145,11 @@ static u32 shim_i(const void *f, u32 in)
     "xor  %%ebx, %%ebx;"
     /* call function pointer */
     "call *%2;"
+    /* restore ebx */
+    "pop %%ebx;"
     : "=a"(out)
     : "a"(in), "m"(f)
-    : "ebx", "ecx", "edx", "edi", "esi");
+    : "ecx", "edx", "edi", "esi");
   return out;
 }
 
