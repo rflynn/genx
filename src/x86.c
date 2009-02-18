@@ -19,8 +19,9 @@
 
 void x86_dump(const u8 *x86, u32 len, FILE *f)
 {
+  assert(len < 1024);
   while (len--)
-    fprintf(f, "%02" PRIx8 " ", *x86++);
+    fprintf(f, "<%02" PRIx8 "> ", *x86++);
   fputc('\n', f);
 }
 

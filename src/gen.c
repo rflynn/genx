@@ -32,6 +32,8 @@ static void chromo_random(genotype *g, unsigned off, unsigned len)
 do_over:
 #endif
     g->chromo[i].x86 = randr(X86_FIRST, X86_COUNT - 1);
+    assert(g->chromo[i].x86 >= X86_FIRST);
+    assert(g->chromo[i].x86 < X86_COUNT);
 #ifdef X86_USE_FLOAT
     if (FLD_14EBP == g->chromo[i].x86) {
       /* FIXME: hard-coded logic to handle instruction dependency */
@@ -61,6 +63,8 @@ do_over:
   }
 }
 
+#define MAX(a,b) ((a)>(b)?(a):(b))
+
 /**
  * randomly mutate a genotype
  */
@@ -70,18 +74,31 @@ static void gen_mutate(genotype *g, const double mutate_rate)
    * NOTE: g->len does NOT include the SUFFIX entries in this
    *       context, but DOES include PREFIX
    */
-  u32
     /* 
      * original offset; a position within the existing function,
      * must be after the prefix
+     *
+     * MUST BE ABLE TO BE EQUAL TO G->LEN, IF G IS EMPTY...
      */
-    ooff   = GEN_PREFIX_LEN + randr(0, g->len - GEN_PREFIX_LEN),
+  assert(g->len >= GEN_PREFIX_LEN);
+  if (RET == g->chromo[g->len-1].x86 || LEAVE == g->chromo[g->len-1].x86) {
+    gen_dump(g, stdout);
+    abort();
+  }
+
+  u32 ooff = GEN_PREFIX_LEN + randr(0, g->len - GEN_PREFIX_LEN - (g->len > GEN_PREFIX_LEN));
+  assert(ooff >= GEN_PREFIX_LEN);
+  assert(ooff <= g->len);
     /* 
      * original length; number of chromosomes to replace;
      * a value of zero will result in an insertion mutation
      * ooff+olen must be within g->len
      */
-    olen   = (u32)(rand01() * (g->len - ooff + 1)),
+  u32 olen = (u32)(rand01() * (g->len - ooff + 1));
+
+  assert(olen <= g->len - GEN_PREFIX_LEN);
+  assert(olen <= g->len - ooff);
+  assert(ooff + olen <= g->len);
     /* 
      * replacement length; length of chromosomes to generate
      * in place of [ooff..ooff+olen];
@@ -89,16 +106,29 @@ static void gen_mutate(genotype *g, const double mutate_rate)
      * else a no-op
      * must fit within CHROMO_MAX
      */
-    rlen   =
+  u32 rlen =
       rand01() *
         ((g->len - (ooff + olen)) + /* space between orig and geno */
          ((GEN_PREFIX_LEN + CHROMO_MAX) > g->len) /* allow growth by one if space */
-          + 1), /* rand01 can never == 1.0, so it'll always be truncated, compensate */
+          + 1); /* rand01 can never == 1.0, so it'll always be truncated, compensate */
+
+  assert(rlen <= g->len - GEN_PREFIX_LEN + 1); /* allow growth by 1 */
+  assert(ooff+rlen < GEN_PREFIX_LEN + CHROMO_MAX);
+  assert(ooff+(int)(rlen+olen) <= g->len + 1); /* allow growth by 1 */
     /*
      * suffix length; the number of chromosomes after [ooff+olen] which
      * must be shifted to accomodate the 'rlen' elements
      */
-    suflen = g->len - (ooff + olen); /* data after the mutation */
+  assert(ooff + olen <= g->len);
+  assert(ooff + MAX(rlen, olen) <= g->len + 1); /* allow growth by 1 */
+
+  u32 suflen = 0;
+  if (ooff < g->len && ooff + MAX(rlen, olen) < g->len)
+    suflen = g->len - (ooff + MAX(rlen, olen)); /* data after the mutation */
+
+  assert(ooff + MAX(olen, rlen) + suflen);
+  assert(suflen < g->len);
+
 #if 0
   printf("max=%u len=%u ooff+olen=%u leaving window of %u slots\n",
     (GEN_PREFIX_LEN + CHROMO_MAX), g->len, (ooff + olen),
@@ -106,29 +136,41 @@ static void gen_mutate(genotype *g, const double mutate_rate)
   printf("g->len=%2u ooff=%2u olen=%2u rlen=%2u suflen=%2u\n",
     g->len, ooff, olen, rlen, suflen);
 #endif
+  if (suflen > 0) {
+    /* FIXME: this is corrupting shit! */
 #if 0
-  assert(g->len <= GEN_PREFIX_LEN + CHROMO_MAX);
-  assert(ooff   >  GEN_PREFIX_LEN - 1);
-  assert(ooff   <= GEN_PREFIX_LEN + CHROMO_MAX);
-  assert(ooff   <= g->len);
+    printf("%u [%u..%u] <- [%u..%u]\n",
+      g->len, ooff+rlen, ooff+rlen+suflen, ooff+olen, ooff+olen+suflen);
 #endif
-  if (suflen > 0)
     memmove(g->chromo + ooff + rlen,
-            g->chromo + ooff, suflen * sizeof g->chromo[0]);
+            g->chromo + ooff + olen, suflen * sizeof g->chromo[0]);
+  }
   if (rlen > 0)
     chromo_random(g, ooff, rlen);
   g->len += (int)(rlen - olen);
-  /* FIXME: fuck, why can't i make this work right?!?!?!?!?!?!? */
-  if (g->len > GEN_PREFIX_LEN + CHROMO_MAX)
-    g->len = GEN_PREFIX_LEN + CHROMO_MAX;
+
+  assert(g->len <= GEN_PREFIX_LEN + CHROMO_MAX);
+  if (RET == g->chromo[g->len-1].x86 || LEAVE == g->chromo[g->len-1].x86) {
+    gen_dump(g, stdout);
+    abort();
+  }
+
+  assert(g->len <= GEN_PREFIX_LEN + CHROMO_MAX);
+
+  assert(g->chromo[0].x86 < X86_COUNT);
+  assert(g->chromo[1].x86 < X86_COUNT);
+  assert(g->chromo[2].x86 < X86_COUNT);
+  assert(g->chromo[3].x86 < X86_COUNT);
+
 }
 
 static void gen_gen(genotype *dst, const genotype *src, const double mutate_rate)
 {
   if (src) {
     /* mutate an existing genotype; by far the most common */
-    memcpy(dst, src, sizeof *dst);
+    dst = (genotype *)src;
     dst->len -= GEN_SUFFIX_LEN;
+    //GEN_PREFIX(dst);
     gen_mutate(dst, mutate_rate);
   } else {
     /* initial generation or re-generation from scratch, far less common */
@@ -139,10 +181,15 @@ static void gen_gen(genotype *dst, const genotype *src, const double mutate_rate
      * from a complex full solution.
      */
     dst->len = GEN_PREFIX_LEN + 1;
-    chromo_random(dst, GEN_PREFIX_LEN, dst->len - GEN_PREFIX_LEN);
     GEN_PREFIX(dst);
+    chromo_random(dst, GEN_PREFIX_LEN, dst->len - GEN_PREFIX_LEN);
   }
   GEN_SUFFIX(dst);
+
+  assert(dst->chromo[0].x86 < X86_COUNT);
+  assert(dst->chromo[1].x86 < X86_COUNT);
+  assert(dst->chromo[2].x86 < X86_COUNT);
+
 }
 
 void pop_gen(struct pop *p, u32 keep, const double mutate_rate)
@@ -154,18 +201,18 @@ void pop_gen(struct pop *p, u32 keep, const double mutate_rate)
      * to serve as the basis for each member of the new generation
      */
     for (i = keep; i < sizeof p->indiv / sizeof p->indiv[0]; i++) {
-      const genotype *src = &p->indiv[randr(0, keep-1)].geno;
+      const genotype *src = &p->indiv[0].geno;//&p->indiv[randr(0, keep-1)].geno;
       gen_gen(&p->indiv[i].geno, src, mutate_rate);
-      GENOSCORE_SCORE(p->indiv+i) = 0;
+      GENOSCORE_SCORE(p->indiv+i) = GENOSCORE_MAX;
     }
   } else {
     /*
      * initial generation (or re-generation from scratch), do not
      * use a 'src' element
      */
-    for (i = keep; i < sizeof p->indiv / sizeof p->indiv[0]; i++) {
+    for (i = 0; i < sizeof p->indiv / sizeof p->indiv[0]; i++) {
       gen_gen(&p->indiv[i].geno, NULL, mutate_rate);
-      GENOSCORE_SCORE(p->indiv+i) = 0;
+      GENOSCORE_SCORE(p->indiv+i) = GENOSCORE_MAX;
     }
   }
 }
@@ -260,19 +307,17 @@ static s32 gen_jmp_pos(const genotype *g, const u32 off, u32 rel, u32 idx)
       i;
   s32 res;
   assert(idx < g->len);
+  assert(idx >= GEN_PREFIX_LEN);
   if (idx == g->len - 1)
     return 0;
   rel = idx + 1 + (rel % (g->len - idx - 2));
+  assert(rel < sizeof g->chromo / sizeof g->chromo[0]);
   for (i = 0; i < rel; i++)
     total += chromo_bytes(g->chromo + i);
   res = (s32)(total - off); /* calculate byte offset */
   if (res < 0) /* can't go back, no matter what */
     res = 0;
 
-#if 0
-  printf("%hd ", res);
-  fflush(stdout);
-#endif
   assert(res >= 0);
 
   return res;
@@ -283,6 +328,7 @@ u32 gen_compile(genotype *g, u8 *buf)
   u32 i,
       len = 0;
   for (i = 0; i < g->len; i++) {
+    assert(g->chromo[i].x86 < X86_COUNT);
     if (X86[g->chromo[i].x86].jcc) {
       /* if relative jump, adjust the random jump destination to a valid offset */
       *(s32*)&g->chromo[i].data =
@@ -295,28 +341,17 @@ u32 gen_compile(genotype *g, u8 *buf)
 }
 
 /**
- * given 2 genoscores, find the one with the lowest (closest) score.
- * if the scores are identical, favor the shorter one.
- */
-int genoscore_cmp(const void *va, const void *vb)
-{
-  const genoscore *a = va,
-                  *b = vb;
-  return (GENOSCORE_SCORE(a) > GENOSCORE_SCORE(b))
-       - (GENOSCORE_SCORE(a) < GENOSCORE_SCORE(b));
-}
-
-/**
  * shorter is better, given same score
  */
 int genoscore_lencmp(const void *va, const void *vb)
 {
-  const genoscore *a = va,
-                  *b = vb;
-  if (GENOSCORE_SCORE(a) == GENOSCORE_SCORE(b))
-    return (a->geno.len > b->geno.len) - (a->geno.len < b->geno.len);
-  return (GENOSCORE_SCORE(a) > GENOSCORE_SCORE(b))
-       - (GENOSCORE_SCORE(a) < GENOSCORE_SCORE(b));
+  register const genoscore *a = va,
+                           *b = vb;
+  register int cmp = (GENOSCORE_SCORE(a) > GENOSCORE_SCORE(b))
+                   - (GENOSCORE_SCORE(a) < GENOSCORE_SCORE(b));
+  if (0 == cmp)
+    cmp = (a->geno.len > b->geno.len) - (a->geno.len < b->geno.len);
+  return cmp;
 }
 
 void pop_score(struct pop *p)
@@ -324,7 +359,11 @@ void pop_score(struct pop *p)
   static u8 x86[1024];
   u32 i;
   for (i = 0; i < sizeof p->indiv / sizeof p->indiv[0]; i++) {
-    u32 x86len = gen_compile(&p->indiv[i].geno, x86);
+    u32 x86len;
+    assert(p->indiv[i].geno.chromo[0].x86 < X86_COUNT);
+    assert(p->indiv[i].geno.chromo[1].x86 < X86_COUNT);
+    assert(p->indiv[i].geno.chromo[2].x86 < X86_COUNT);
+    x86len = gen_compile(&p->indiv[i].geno, x86);
     if (Dump > 0)
       x86_dump(x86, x86len, stdout);
     if (Dump > 1)

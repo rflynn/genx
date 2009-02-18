@@ -11,9 +11,10 @@
 #define GEN_H
 
 #include <stdio.h>
+#include <limits.h>
 #include "typ.h"
 
-#define POP_SIZE        64 * 1024 /* total genotypes in a population generation */
+#define POP_SIZE        16        /* total genotypes in a population generation */
 #define CHROMO_MAX      72        /* maximum chromosomes in a genotype */
 #define MAX_INT_CONST   0xFFFF    /* maximum possible random integer value */
 #define MAX_FLT_CONST   10.f      /* max random floating point val */

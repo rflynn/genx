@@ -167,6 +167,14 @@ void randr_test(void)
   printf("randr(lo, hi) test done.\n");
 }
 
+float rand01(void)
+{
+  float r = (float)randr(0, 99999) / (float)100000;
+  assert(r >= 0.f);
+  assert(r < 1.f);
+  return r;
+}
+
 float randfr(float min, float max)
 {
   float r = min + ((max - min + 1) * rand01());

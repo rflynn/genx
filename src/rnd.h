@@ -26,8 +26,9 @@ void randr_test(void);
 /**
  * return a random double within the range [0.0, 1.0)
  */
-#define rand01()  drand48()
+//#define rand01()  drand48()
 
+float rand01(void);
 float randfr(float min, float max);
 
 #endif
