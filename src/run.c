@@ -165,9 +165,9 @@ static u32 shim_i(const void *f, u32 x, u32 y, u32 z)
     "push %%esi;"
 #endif
     /* pass in parameters */
-    "movl %2,0x8(%%esp);"
+    "movl %4,0x8(%%esp);"
     "movl %3,0x4(%%esp);"
-    "movl %4,   (%%esp);"
+    "movl %2,   (%%esp);"
     /* zero regs */
     "xor  %%eax, %%eax;"
     "xor  %%ebx, %%ebx;"
@@ -176,7 +176,6 @@ static u32 shim_i(const void *f, u32 x, u32 y, u32 z)
     "xor  %%edi, %%edi;"
     "xor  %%esi, %%esi;"
     /* call function pointer */
-    "cpuid;"
     "call *%1;"
 #ifdef __x86_64__
     "popq %%rsi;"

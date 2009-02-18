@@ -14,12 +14,14 @@
 #include "typ.h"
 
 void rnd32_init(u32);
+#if 1
 u32  rnd32(void);
-#if 0
-#define rnd32() random()
+#else
+//# define rnd32() random()
 #endif
 
 u32  randr(u32 min, u32 max);
+void randr_test(void);
 
 /**
  * return a random double within the range [0.0, 1.0)

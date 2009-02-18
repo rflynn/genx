@@ -2,7 +2,7 @@
 # $Id$
 #
 
-CFLAGS = -W -Wall -pedantic -std=gnu99 -m32
+CFLAGS = -W -Wall -Wshadow -pedantic -std=gnu99 -m32
 LDFLAGS = -lm -m32
 BIN = genx
 ALL = genx

@@ -24,9 +24,28 @@
 #include "gen.h"
 #include "run.h"
 
-#define GEN_DEADEND   1000      /* start over after this many generations of no progress */
-#define POP_KEEP      3         /* keep this many from generation to generation */
-#define MINIMIZE_LEN  1         /* do we care about finding the shortest solution, or just any match? */
+#define GEN_DEADEND 10000    /* start over after this many generations of no progress */
+                             /*
+                              * FIXME: this is the right idea, but a bad implementation
+                              * of it. for any given solution, there will be some
+                              * minimum solution that a single mutation is extremely
+                              * likely to improve.
+                              *
+                              * after a certain period of non-progress we should be
+                              * able to store/push a current solution and start over
+                              * again fresh.
+                              *
+                              * the reason this won't work now is because we always
+                              * keep that solution in CurrBest and compare everything
+                              * to it; which prevents us from re-growing a new one,
+                              * since starting from scratch means even the best
+                              * solution will not be perfect from the start (and
+                              * which will be discarded in favor of the longer but
+                              * technically better solutions)
+                              *
+                              */
+
+#define POP_KEEP        2    /* keep this many from generation to generation */
 
 extern const struct x86 X86[X86_COUNT];
 
@@ -86,25 +105,60 @@ static s32 magic(s32 x[])
 /* test multi-parameter */
 static s32 magic(s32 x[])
 {
-  //return x[0] + x[1];
-  //return x[0] * x[1];
-  //return (x[0] * x[1]) + x[2];
-  //return 0x55555555 ^ x[0]; // ha! found equivalence very quickly, i'm surprised
-  //return x[0] / x[1]; // found pretty quickly
+#if 0 /* found */
+  return x[0] + x[1];
+  return x[0] * x[1];
+  return (x[0] * x[1]) + x[2];
+  return 0x55555555 ^ x[0]; /* ha! found equivalence very quickly, i'm surprised */
+  return x[0] / x[1]; // found pretty quickly
+  return x[0] / (((x[2] * x[1]) / x[0]) + 1); /* found, not as quickly */
+  return x[0] ^ (x[1] << 16) ^ (x[2] >> 3);
+  return (x[0] > 0) - (x[0] < 0); /* return 1 for positive, 0 for zero, -1 for negative */
+  return x[0]+1; /* double-check that we can find a solution that contains
+                  * EXACTLY one instruction */
+  return x[0]+2;
+  return x[0]+x[1]+1;
+  return x[0]+3; /* double-check that we can find a solution that contains
+                  * EXACTLY one instruction */
+#endif
 
-  //return x[0] / (((x[2] * x[1]) / x[0]) + 1); // found, not as quickly
-
-  //return x[0] ^ (x[1] << 16) ^ (x[2] >> 3);
+/* I don't even know why this works, but it is pretty short :/
+GENERATION      53    3538944 genotypes (321722.2/sec) @Wed Feb 18 02:08:06 2009
+  0 c8 00 00 00                     enter
+  1 8b 45 08                        mov     0x8(%ebp), %eax
+  2 8b 5d 0c                        mov     0xc(%ebp), %ebx
+  3 8b 4d 10                        mov     0x10(%ebp), %ecx
+  4 c1 d8 22                        rol     0x22, %ebx, %eax
+  5 c1 e8 1f                        shr     0x1f, %eax
+  6 0f ba f8 4e                     btc     0x4e, %eax
+  7 81 f0 ff bf 00 00               xor     0x0000bfff, %eax
+  8 c9                              leave
+  9 c3                              ret
+->score=0
+  return 0xffff ^ (x[0] & 1);
+*/
 
   return (s32)sqrt(x[0]);
-
-  //return 0x55555555 | x[0]; // not found yet
+  
+#if 0 /* not found: */
+  return 0x55555555 | x[0]; // not found yet
+#endif
 }
 
 #endif
 
+/*
+ * target input -> output data
+ * this is what we test against
+ */
 struct target Target[] = {
 #ifdef X86_USE_FLOAT
+  /*
+   * age, co2, temp data recorded from ice cores by
+   * the Vostok Antarctic research station
+   * @ref ftp://cdiac.ornl.gov/pub/trends/co2/vostok.icecore.co2
+   * @ref http://cdiac.esd.ornl.gov/ftp/trends/temp/vostok/vostok.1999.temp.dat
+   */
   /* air        co2            temp
    * age        ppmv           var (C) */
   {{   2342.f,  284.7f, 0.f }, -0.98f },
@@ -114,7 +168,8 @@ struct target Target[] = {
   {{ 201324.f,  226.4f, 0.f }, -1.49f },
   {{ 401423.f,  277.1f, 0.f }, -1.09f },
 #else
-  /* random integer data */
+  /* a range of integer data with which to play */
+  {{         -1, 0, 0 }, 0 },
   {{ 0xffffffff, 0, 0 }, 0 },
   {{ 0x7fffffff, 0, 0 }, 0 },
   {{ 0x30305123, 0, 0 }, 0 },
@@ -157,24 +212,27 @@ static void calc_target(void)
 #endif
 
 int Dump = 0; /* verbosity level */
-static time_t Start;
 
 int main(int argc, char *argv[])
 {
   static struct pop Pop;
-  static u8 x86[1024];
   /* mutation rates */
-  const double Mutate_Rate    = 0.2;  /*  */
+  const double Mutate_Rate    = 0.2;  /* [0,1] larger values promote more
+                                       * more radical mutations */
+  time_t       Start;
   genoscore    CurrBest;              /* save best found solution */
   u64          indivs         = 0;    /* total creatures created; status */
   u32          generation     = 0,    /* track time; status */
                gen_since_best = 0;    /* dead end counter */
+  u8 *x86 = malloc(1024);
+  printf("x86=%p\n", (void *)x86);
+  assert(NULL != x86);
   /* show sizes of our core types in bytes */
   printf("sizeof Pop.indiv[0]=%lu\n", (unsigned long)(sizeof Pop.indiv[0]));
   printf("sizeof Pop=%lu\n", (unsigned long)(sizeof Pop));
   printf("FLT_EPSILON=%g\n", FLT_EPSILON);
   /* sanity-checks */
-  assert(CHROMO_MAX > GEN_PREFIX_LEN + GEN_SUFFIX_LEN);
+  assert(CHROMO_MAX > 0);
   /* one-time initialization */
   x86_init();
   if (argc > 1) {
@@ -192,9 +250,15 @@ int main(int argc, char *argv[])
   CurrBest.geno.len = 0;
   rnd32_init((u32)time(NULL));
   setvbuf(stdout, (char *)NULL, _IONBF, 0); /* unbuffer stdout */
+
+  /* sanity check, initialization checks */
+  randr_test();
+
   memset(&Pop, 0, sizeof Pop);
   nice(+19); /* be as polite to any other programs as possible */
   Start = time(NULL);
+  printf("Start=%lu\n", (unsigned long)Start);
+
   pop_gen(&Pop, 0, Mutate_Rate); /* seminal generation */
   /* evolve */
   /*
@@ -207,9 +271,10 @@ int main(int argc, char *argv[])
     progress = -1 == genoscore_lencmp(&Pop.indiv[0], &CurrBest);
     if (progress || 0 == generation % 100) {
       /* display generation regularly or on progress */
+      char tbuf[32];
       time_t t = time(NULL);
-      printf("GENERATION %5" PRIu32 " %10" PRIu64 " genotypes (%.1f/sec) @%s",
-        generation, indivs, (double)indivs / (t - Start), ctime(&t));
+      printf("GENERATION %7" PRIu32 " %10" PRIu64 " genotypes (%.1f/sec) @%s",
+        generation, indivs, (double)indivs / (t - Start + 1), ctime_r(&t, tbuf));
       if (progress) {
         /* only display best if it's changed; raises signal/noise ration */
         memcpy(&CurrBest, Pop.indiv, sizeof Pop.indiv[0]);

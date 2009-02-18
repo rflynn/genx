@@ -1,0 +1,77 @@
+# ex: set ff=dos ts=4 noet:
+# $Id$
+
+Description of the Architecture of genx
+(With the Goal of Laying the Groundwork for a Refactoring Of the Projecte)
+-----------------------------------------------------------------------------
+
+Description of a single work unit
+---------------------------------
+
+	Type (int, float)
+
+	Data
+		Test
+			input [type]
+			output
+				raw data
+					[type]
+				OR
+				function, applied to input
+					[f(i) : input i]
+		Verify()
+			a function whose job is to exhaustively verify, whatever that
+			means for a given problem, that a solution that passes all the
+			test data also passes all possible tests.
+
+			QUESTION: how can we sanely handle a situation where
+			solutions pass all tests but fail the verification? we would
+			want to update the test data to subsequently include all
+			previous tests, plus the one verification test it fails, so
+			that the tests grow and the solutions more fully 
+	
+	Options
+
+		ChromoMax : u8
+			
+			The maximum number of "chromosomes" (operations) in a function,
+			all functions will contain between [0, Chromomax) chromosomes.
+
+			Solutions expected to be simple 
+
+		PopSize : u32
+
+			The number of genotypes to create in each generation.
+
+		PopKeep : u32
+
+			the number of top genotypes to use from one generation to
+			populate the next.
+
+		DeadEnd : u32
+
+			after a certain number of generations that produce no
+			progress, start generating from scratch again.
+			currently this is a global setting, but should be
+			configurable per-problem.
+
+			for optimization-type problems this should be relatively
+			low, as solutions are already known and we should vigorously
+			try new algorithms.
+
+			for function-searching problems this should be relatively
+			high, as finding even a moderately close approximation can
+			be very difficult and less likely to be replicated.
+
+
+	I'd like to break the work units into standalone modules (.dll/.so)
+	that can use either float or int (or both, conceivably).
+
+
+Algorithm
+----------
+
+
+
+
+

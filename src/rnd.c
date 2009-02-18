@@ -8,6 +8,7 @@
  */
 
 #include <assert.h>
+#include <stdio.h>
 #define _XOPEN_SOURCE /* drand48() via stdlib */
 #include <stdlib.h>
 #include "rnd.h"
@@ -43,6 +44,8 @@ void rnd32_init(u32 seed)
 {
   rndhi = seed;
   rndlo = rndhi ^ 0x49616E42;
+  printf("rndlo=%" PRIu32 " rndhi=%" PRIu32 "\n",
+    rndlo, rndhi);
 }
 
 #endif
@@ -108,13 +111,60 @@ u32 randr(u32 min, u32 max)
 {
 #if 0
   /* this is the more proper way, but it's slower because it uses division! */
-  double scaled = random() / (RAND_MAX + 1.0);
+  double scaled = (double)rnd32() / (double)0xFFFFFFFF;
   u32 r = min + ((max - min + 1) * scaled);
 #else
   /* trade quicker time for lower quality psuedo-random numbers */
   u32 r = min + (rnd32() % (max - min + 1));
 #endif
   return r;
+}
+
+static void hist_print(const u32 n[], size_t len)
+{
+  static const char const bar[100] = 
+    "##########" "##########" "##########" "##########" "##########"
+    "##########" "##########" "##########" "##########" "#######...";
+  size_t i;
+  for (i = 0; i < len; i++)
+    printf("#%3u %3" PRIu32 " %.*s\n",
+      (unsigned)i, n[i], (unsigned)(n[i] > sizeof bar ? sizeof bar : n[i]), bar);
+}
+
+static u32 rsum(const u32 n[], size_t len)
+{
+  u32 sum = 0;
+  while (len--)
+    sum += n[len];
+  return sum;
+}
+
+static void do_randr_test(void)
+{
+  #define RRTN      4
+  #define RRTCNT  300
+  u32 i, cnt[RRTN];
+  for (i = 0; i < RRTN; i++)
+    cnt[i] = 0U;
+  for (i = 0; i < RRTCNT; i++)
+    cnt[randr(0, RRTN-1)]++;
+  printf("test randr(0, %u) @ %u\n", RRTN, RRTCNT);
+  hist_print(cnt, RRTN);
+  printf("sum=%u\n", rsum(cnt, RRTN));
+  assert(RRTCNT == rsum(cnt, RRTN));
+}
+
+void randr_test(void)
+{
+  long n = 5 * 1000 * 1000;
+  printf("randr(lo, hi) test begin...\n");
+  do_randr_test();
+  printf("Generate %ld more...\n", n);
+  while (n--) /* run it a ways... */
+    (void)rnd32();
+  printf("Test again...\n");
+  do_randr_test();
+  printf("randr(lo, hi) test done.\n");
 }
 
 float randfr(float min, float max)

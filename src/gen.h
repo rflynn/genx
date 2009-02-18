@@ -19,50 +19,6 @@
 #define MAX_FLT_CONST   10.f      /* max random floating point val */
 #define MIN_FLT_CONST  -10.f      /* min random floating point val */
 
-struct genotype {
-  u32 len;
-  struct op {
-    u8 x86,     /* index into X86[] */
-       modrm,   /* mod/rm byte, if used */
-       data[4]; /* random integer data, if used */
-  } chromo[CHROMO_MAX];
-};
-typedef struct genotype genotype;
-
-struct pop {
-  struct genoscore {
-    union {
-      float f;
-      u32   i;
-    } score;
-    struct genotype geno;
-  } indiv[POP_SIZE];
-};
-typedef struct genoscore genoscore;
-
-void gen_dump(const genotype *g, FILE *f);
-u32  gen_compile(genotype *g, u8 *buf);
-
-void pop_gen(struct pop *p,
-             u32 keep,
-             const double mutate_rate);
-
-void pop_score(struct pop *p);
-int genoscore_cmp   (const void *, const void *);
-int genoscore_lencmp(const void *, const void *);
-
-#ifdef X86_USE_FLOAT
-# define GENOSCORE_SCORE(gs)  ((gs)->score.f)
-# define GENOSCORE_MAX        FLT_MAX
-# define GENOSCORE_MIN        FLT_EPSILON
-#else
-# define GENOSCORE_SCORE(gs)  ((gs)->score.i)
-# define GENOSCORE_MAX        INT_MAX
-# define GENOSCORE_MIN        0
-#endif
-
-#define GENOSCORE_MATCH(gs)   (GENOSCORE_SCORE(gs) <= GENOSCORE_MIN)
-
 /*
  * define common op prefix for all functions;
  * required by x86 to set up environment
@@ -103,6 +59,50 @@ int genoscore_lencmp(const void *, const void *);
   (g)->chromo[(g)->len++].x86 = RET;        \
   } while (0)
 #endif
+
+struct genotype {
+  u32 len;
+  struct op {
+    u8 x86,     /* index into X86[] */
+       modrm,   /* mod/rm byte, if used */
+       data[4]; /* random integer data, if used */
+  } chromo[GEN_PREFIX_LEN + CHROMO_MAX + GEN_SUFFIX_LEN];
+};
+typedef struct genotype genotype;
+
+struct pop {
+  struct genoscore {
+    union {
+      float f;
+      u32   i;
+    } score;
+    struct genotype geno;
+  } indiv[POP_SIZE];
+};
+typedef struct genoscore genoscore;
+
+void gen_dump(const genotype *g, FILE *f);
+u32  gen_compile(genotype *g, u8 *buf);
+
+void pop_gen(struct pop *p,
+             u32 keep,
+             const double mutate_rate);
+
+void pop_score(struct pop *p);
+int genoscore_cmp   (const void *, const void *);
+int genoscore_lencmp(const void *, const void *);
+
+#ifdef X86_USE_FLOAT
+# define GENOSCORE_SCORE(gs)  ((gs)->score.f)
+# define GENOSCORE_MAX        FLT_MAX
+# define GENOSCORE_MIN        FLT_EPSILON
+#else
+# define GENOSCORE_SCORE(gs)  ((gs)->score.i)
+# define GENOSCORE_MAX        INT_MAX
+# define GENOSCORE_MIN        0
+#endif
+
+#define GENOSCORE_MATCH(gs)   (GENOSCORE_SCORE(gs) <= GENOSCORE_MIN)
 
 /*
  * beginnings of eventual interface describing a problem and

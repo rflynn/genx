@@ -20,6 +20,9 @@
 extern const struct x86 X86[X86_COUNT];
 extern int Dump;
 
+/**
+ * populate g[off..off+len] with random chromosomes
+ */
 static void chromo_random(genotype *g, unsigned off, unsigned len)
 {
   u32 i;
@@ -45,9 +48,11 @@ do_over:
       x = X86 + g->chromo[i].x86;
       g->chromo[i].modrm = gen_modrm(x->modrm);
       if (x->immlen) {
+#ifdef X86_USE_FLOAT
         if (FLT == x->flt)
           *(float *)&g->chromo[i].data = randfr(MIN_FLT_CONST, MAX_FLT_CONST);
         else
+#endif
           *(u32 *)&g->chromo[i].data = randr(0, MAX_INT_CONST);
       }
 #ifdef X86_USE_FLOAT
@@ -56,59 +61,91 @@ do_over:
   }
 }
 
+/**
+ * randomly mutate a genotype
+ */
 static void gen_mutate(genotype *g, const double mutate_rate)
 {
-  /* calculate an offset within g for a mutation occur;
-   * calculate the length of the area to be mutated;
-   * calculate the length of the replacement;
-   * this allows for insertions, deletions and replacements
-   *
+  /* 
    * NOTE: g->len does NOT include the SUFFIX entries in this
-   *       context
+   *       context, but DOES include PREFIX
    */
-  u32 doff   = randr(GEN_PREFIX_LEN, g->len),
-      /* TODO: incorporate mutate_rate somehow! */
-      dlen   = (u32)(rand01() * mutate_rate * (g->len - doff)),
-      slen   = (u32)(rand01() * mutate_rate *
-        (CHROMO_MAX - GEN_SUFFIX_LEN - (g->len - dlen))),
-      suflen = g->len - (doff + dlen); /* data after the mutation */
+  u32
+    /* 
+     * original offset; a position within the existing function,
+     * must be after the prefix
+     */
+    ooff   = GEN_PREFIX_LEN + randr(0, g->len - GEN_PREFIX_LEN),
+    /* 
+     * original length; number of chromosomes to replace;
+     * a value of zero will result in an insertion mutation
+     * ooff+olen must be within g->len
+     */
+    olen   = (u32)(rand01() * (g->len - ooff + 1)),
+    /* 
+     * replacement length; length of chromosomes to generate
+     * in place of [ooff..ooff+olen];
+     * a result of zero will result in a deletion if olen > 0,
+     * else a no-op
+     * must fit within CHROMO_MAX
+     */
+    rlen   =
+      rand01() *
+        ((g->len - (ooff + olen)) + /* space between orig and geno */
+         ((GEN_PREFIX_LEN + CHROMO_MAX) > g->len) /* allow growth by one if space */
+          + 1), /* rand01 can never == 1.0, so it'll always be truncated, compensate */
+    /*
+     * suffix length; the number of chromosomes after [ooff+olen] which
+     * must be shifted to accomodate the 'rlen' elements
+     */
+    suflen = g->len - (ooff + olen); /* data after the mutation */
 #if 0
-  printf("g->len=%2u doff=%2u dlen=%2u slen=%2u suflen=%2u\n",
-    g->len, doff, dlen, slen, suflen);
-  assert(g->len <= CHROMO_MAX);
-  assert(doff   >= GEN_PREFIX_LEN);
-  assert(doff   <= CHROMO_MAX);
-  assert(doff   <= g->len);
-  assert(g->len + (int)(slen - dlen) <= CHROMO_MAX - GEN_SUFFIX_LEN);
+  printf("max=%u len=%u ooff+olen=%u leaving window of %u slots\n",
+    (GEN_PREFIX_LEN + CHROMO_MAX), g->len, (ooff + olen),
+    (g->len-(ooff+olen)) + ((GEN_PREFIX_LEN + CHROMO_MAX) - g->len));
+  printf("g->len=%2u ooff=%2u olen=%2u rlen=%2u suflen=%2u\n",
+    g->len, ooff, olen, rlen, suflen);
+#endif
+#if 0
+  assert(g->len <= GEN_PREFIX_LEN + CHROMO_MAX);
+  assert(ooff   >  GEN_PREFIX_LEN - 1);
+  assert(ooff   <= GEN_PREFIX_LEN + CHROMO_MAX);
+  assert(ooff   <= g->len);
 #endif
   if (suflen > 0)
-    memmove(g->chromo + doff + slen,
-            g->chromo + doff, suflen * sizeof g->chromo[0]);
-  if (slen > 0)
-    chromo_random(g, doff, slen);
-  g->len += (int)(slen - dlen);
+    memmove(g->chromo + ooff + rlen,
+            g->chromo + ooff, suflen * sizeof g->chromo[0]);
+  if (rlen > 0)
+    chromo_random(g, ooff, rlen);
+  g->len += (int)(rlen - olen);
+  /* FIXME: fuck, why can't i make this work right?!?!?!?!?!?!? */
+  if (g->len > GEN_PREFIX_LEN + CHROMO_MAX)
+    g->len = GEN_PREFIX_LEN + CHROMO_MAX;
 }
 
-static void gen_gen(genotype *dst, const genotype *src,
-                    const double mutate_rate)
+static void gen_gen(genotype *dst, const genotype *src, const double mutate_rate)
 {
   if (src) {
-    /* mutate an existing genotype */
+    /* mutate an existing genotype; by far the most common */
     memcpy(dst, src, sizeof *dst);
     dst->len -= GEN_SUFFIX_LEN;
     gen_mutate(dst, mutate_rate);
   } else {
-    /* initial generation */
-    dst->len = randr(GEN_PREFIX_LEN + 1, CHROMO_MAX - GEN_SUFFIX_LEN);
-    chromo_random(dst, GEN_PREFIX_LEN, dst->len);
+    /* initial generation or re-generation from scratch, far less common */
+    /*
+     * always begin genotypes with a single chromosome. simpler
+     * solutions are always better, and it is easier to add
+     * instructions to a simple partial solution than to remove them
+     * from a complex full solution.
+     */
+    dst->len = GEN_PREFIX_LEN + 1;
+    chromo_random(dst, GEN_PREFIX_LEN, dst->len - GEN_PREFIX_LEN);
     GEN_PREFIX(dst);
   }
   GEN_SUFFIX(dst);
 }
 
-void pop_gen(struct pop *p,
-             u32 keep,
-             const double mutate_rate)
+void pop_gen(struct pop *p, u32 keep, const double mutate_rate)
 {
   u32 i;
   if (keep > 0) {

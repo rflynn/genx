@@ -15,9 +15,14 @@ Integer functions:
     -> Need ability to operate on strings
   minimal perfect hashing for specified datasets
 
-Optimizing best-known implementations
-  
+Finding non-obvious optimizations of known functions:
 
-Finding branchless implementations of existing functions
-  
+  Incorporate problems from the Bit-Twiddling Hacks site:
+    Int.Bit.PopCnt.8
+    Int.Bit.PopCnt.32
+    Int.Bit.Reverse.8
+    Int.Bit.Pow2Up.U32
+    Int.Bit.HasZeroByte.32
+    Int.Bit.Sign.S32
+
 

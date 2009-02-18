@@ -29,6 +29,8 @@ void         x86_dump(const u8 *x86, u32 len, FILE *f);
 # define X86_NOTFOUND 0xFF
 u8 x86_by_name(const char *descr);
 
+#define R 8 /* /r */
+
 /**
  * instruction sets in the x86 family;
  * allows us to classify and use/disuse
@@ -190,15 +192,17 @@ enum {
   CMOVPO,
   CMOVS,
   CMOVZ,
+  INC,
+  DEC,
 #endif
 
   LEA_8EBP_EAX,
-  MOV_EAX_14EBP,
 
 #ifdef X86_USE_FLOAT
 #ifndef X86_FIRST
 # define X86_FIRST LEA_8EBP_EAX
 #endif
+  MOV_EAX_14EBP,
   FLD,
   MOV_IMM32_14EBP,
   FLD_14EBP,
