@@ -6,20 +6,14 @@
  * Released under the MIT License, see the "LICENSE.txt" file or
  *   <URL: http://www.opensource.org/licenses/mit-license.php>
  */
-/*
- * FIXME: still, very occasionally (once every billion genotypes or so)
- *        produces code that crashes(!)
- */
 
 #define _XOPEN_SOURCE 500
 #include <stdlib.h>
 
-#include <sys/wait.h>
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include <limits.h>
 #include <time.h>
 #include <math.h>
@@ -223,15 +217,18 @@ int main(int argc, char *argv[])
         }
       }
     }
-    if (GEN_DEADEND == gen_since_best && !progress) {
-      gen_dump(&Pop.indiv[0].geno, stdout);
-      (void)gen_compile(&Pop.indiv[0].geno, x86);
+    if (gen_since_best < GEN_DEADEND) {
+      pop_gen(&Pop, POP_KEEP, Cross_Rate, Mutate_Rate); /* retain best from previous */
+    } else {
+      /* we have run GEN_DEADEND generations and haven't made any progress;
+       * throw out our top genetic material and start fresh, but still
+       * retain CurrBest, against which all new candidates are judged */
+      gen_dump(&CurrBest.geno, stdout);
+      (void)gen_compile(&CurrBest.geno, x86);
       (void)score((func)x86, 1);
       printf("No progress for %u generations, trying something new...\n", GEN_DEADEND);
       pop_gen(&Pop, 0, Cross_Rate, Mutate_Rate); /* start over! */
       gen_since_best = 0;
-    } else {
-      pop_gen(&Pop, POP_KEEP, Cross_Rate, Mutate_Rate); /* retain best from previous */
     }
     generation++;
     gen_since_best++;
