@@ -7,6 +7,7 @@
  *   <URL: http://www.opensource.org/licenses/mit-license.php>
  */
 
+#include <assert.h>
 #include "rnd.h"
 
 #if 1
@@ -95,6 +96,13 @@ u32 randr(u32 min, u32 max)
   /* trade quicker time for lower quality psuedo-random numbers */
   u32 r = min + (rnd32() % (max - min + 1));
 #endif
+  return r;
+}
+
+float randfr(float min, float max)
+{
+  float scaled = rnd32() / 0xFFFFFFFF;
+  float r = min + ((max - min + 1) * scaled);
   return r;
 }
 

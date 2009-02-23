@@ -167,16 +167,106 @@ const struct x86 X86[X86_COUNT] = {
   { "cmovs  "                 , { 0x0f, 0x48       }, 2, 1, 0, 0 }, /* /r    CMOVS   r32,   r/m32       */
   { "cmovz  "                 , { 0x0f, 0x44       }, 2, 1, 0, 0 }, /* /r    CMOVZ   r32,   r/m32       */
 
-#if X86_FLOAT
-
 /*
  * x86 floating point operations
  */
 
-  /* descr                        opcode              oplen,modrmlen,modrm,imm */
-  //{ "fild   "                 , { 0xdb             }, 1, 1, 0, 0 }, /* /r    CMOVZ   r32,   r/m32       */
 /*
-DB /0 FILD m32int Push m32int onto the FPU register stack.
+ * BIG TODO: because of floating point stack we need to ensure we don't overflow it, or maybe
+ * just recover from a SIGFPE if we do... yeah that's best.
+ */
+
+  /* descr                        opcode              oplen,modrmlen,modrm,imm */
+  //{ "fld     0x8(%%ebp)"      , { 0xdd, 0x45, 0x08 }, 3, 0, 0, 0 }, /* /0    FLD     m64fp              */
+  // 804842e:       c7 04 24 80 85 04 08    movl   $0x8048580,(%esp)
+
+  /* the problem with floats and random values is that you can't directly load an immediate
+   * value into the float stack; you need to load it into memory first, then into the stack */
+  { "sub     0x04, %%esp"           , { 0x83, 0xec, 0x04 }, 3, 0, 0, 0 }, /* */
+  { "add     0x04, %%esp"           , { 0x83, 0xc4, 0x04 }, 3, 0, 0, 0 }, /* */
+   //8048370:       83 c4 04                add    $0x4,%esp
+  { "mov     0x%08" PRIx32 ", %%eax", { 0xb8             }, 1, 0, 0, 4 }, /* */
+  { "mov     %%eax, -0x4(%%ebp)"    , { 0x89, 0x45, 0xfb }, 3, 0, 0, 0 }, /* */
+  { "fld     -0x4(%%ebp)"           , { 0xd9, 0x45, 0xfb }, 3, 0, 0, 0 }, /* */
+#if 0
+ 080483d3 <float_shim>:
+ 80483d3:       55                      push   %ebp
+ 80483d4:       89 e5                   mov    %esp,%ebp
+ 80483d6:       83 ec 18                sub    $0x18,%esp
+ 80483d9:       8b 45 08                mov    0x8(%ebp),%eax
+ 80483dc:       89 45 e8                mov    %eax,-0x18(%ebp)
+ 80483df:       8b 45 0c                mov    0xc(%ebp),%eax
+ 80483e2:       89 45 ec                mov    %eax,-0x14(%ebp)
+ 80483e5:       dd 45 e8                fldl   -0x18(%ebp)
+#endif
+
+  { "fld     0x8(%%ebp)"      , { 0xd9, 0x45, 0x08 }, 3, 0, 0, 0 }, /* /0    FLD     m32fp              */
+   {"fild    0x8(%%ebp)"      , { 0xdb, 0x45, 0x08 }, 3, 0, 0, 0 }, /* /0    FILD    m32int             */
+  //{ "fisttp  0x8(%%ebp)"    , { 0xdb, 0x4d, 0x08 }, 3, 0, 0, 0 }, /* /1    FISTTP  m32int             */
+  { "fist    0x8(%%ebp)"      , { 0xdb, 0x55, 0x08 }, 3, 0, 0, 0 }, /* /2    FIST    m32int             */
+  { "fistp   0x8(%%ebp)"      , { 0xdb, 0x5d, 0x08 }, 3, 0, 0, 0 }, /* /3    FISTP   m32int             */
+
+  { "f2xm1"                   , { 0xd9, 0xf0       }, 2, 0, 0, 0 }, /* /0    F2XM1                      */
+
+  { "fprem"                   , { 0xd9, 0xf8       }, 2, 0, 0, 0 }, /* /0    FPREM                      */
+  { "fsqrt"                   , { 0xd9, 0xfa       }, 2, 0, 0, 0 }, /* /0    FSQRT                      */
+  { "fsincos"                 , { 0xd9, 0xfb       }, 2, 0, 0, 0 }, /* /0    FSINCOS                    */
+  { "fscale"                  , { 0xd9, 0xfd       }, 2, 0, 0, 0 }, /* /0    FSCALE                     */
+  { "fsin"                    , { 0xd9, 0xfe       }, 2, 0, 0, 0 }, /* /0    FSIN                       */
+  { "fcos"                    , { 0xd9, 0xff       }, 2, 0, 0, 0 }, /* /0    FCOS                       */
+  { "fchs"                    , { 0xd9, 0xe0       }, 2, 0, 0, 0 }, /* /0    FCHS                       */
+  { "fxam"                    , { 0xd9, 0xe5       }, 2, 0, 0, 0 }, /* /0    FXAM                       */
+
+  { "fld1"                    , { 0xd9, 0xe8       }, 2, 0, 0, 0 }, /* /0    FLD1                       */
+  { "fldl2t"                  , { 0xd9, 0xe9       }, 2, 0, 0, 0 }, /* /0    FLDL2T                     */
+  { "fldl2e"                  , { 0xd9, 0xea       }, 2, 0, 0, 0 }, /* /0    FLDL2E                     */
+  { "fldpi"                   , { 0xd9, 0xeb       }, 2, 0, 0, 0 }, /* /0    FLDPI                      */
+  { "fldlg2"                  , { 0xd9, 0xec       }, 2, 0, 0, 0 }, /* /0    FLDLG2                     */
+  { "fldln2"                  , { 0xd9, 0xed       }, 2, 0, 0, 0 }, /* /0    FLDLN2                     */
+  { "fabs"                    , { 0xd9, 0xe1       }, 2, 0, 0, 0 }, /* /0    FABS                       */
+  { "fmulp"                   , { 0xde, 0xc9       }, 2, 0, 0, 0 }, /* /0    FMULP                      */
+  { "faddp"                   , { 0xde, 0xc1       }, 2, 0, 0, 0 }, /* /0    FADDP                      */
+
+  { "fcomi   %%st,%%st(1)"    , { 0xdb, 0xf1       }, 2, 0, 0, 0 }, /* +i    FCOMI   ST,    ST(i)       */
+  { "fcomip  %%st,%%st(1)"    , { 0xdf, 0xf1       }, 2, 0, 0, 0 }, /* +i    FCOMIP  ST,    ST(i)       */
+  { "fucomi  %%st,%%st(1)"    , { 0xdb, 0xe9       }, 2, 0, 0, 0 }, /* +i    FUCOMI  ST,    ST(i)       */
+  { "fucomip %%st,%%st(1)"    , { 0xdf, 0xe9       }, 2, 0, 0, 0 }, /* +i    FUCOMIP ST,    ST(i)       */
+
+  { "ficom   %%st(0),0x8(%%ebp)",{ 0xda,0x55, 0x08 }, 3, 0, 0, 0 }, /* /2    FICOM   ST(0), m32int      */
+  { "ficomp  %%st(0),0x8(%%ebp)",{ 0xda,0x5d, 0x08 }, 3, 0, 0, 0 }, /* /3    FICOMP  ST(0), m32int      */
+
+  { "fcmovb  %%st(0),%%st(1)" , { 0xda, 0xc1       }, 2, 0, 0, 0 }, /* +i    FCMOVB  ST(0), ST(i)       */
+  { "fcmove  %%st(0),%%st(1)" , { 0xda, 0xc9       }, 2, 0, 0, 0 }, /* +i    FCMOVE  ST(0), ST(i)       */
+  { "fcmovbe %%st(0),%%st(1)" , { 0xda, 0xd1       }, 2, 0, 0, 0 }, /* +i    FCMOVBE ST(0), ST(i)       */
+  { "fcmovu  %%st(0),%%st(1)" , { 0xda, 0xd9       }, 2, 0, 0, 0 }, /* +i    FCMOVU  ST(0), ST(i)       */
+  { "fcmovnb %%st(0),%%st(1)" , { 0xdb, 0xc1       }, 2, 0, 0, 0 }, /* +i    FCMOVNB ST(0), ST(i)       */
+  { "fcmovne %%st(0),%%st(1)" , { 0xdb, 0xc1       }, 2, 0, 0, 0 }, /* +i    FCMOVNE ST(0), ST(i)       */
+  { "fcmovnbe %%st(0),%%st(1)", { 0xdb, 0xd1       }, 2, 0, 0, 0 }, /* +i    FCMOVNBE ST(0), ST(i)      */
+  { "fcmovnu %%st(0),%%st(1)" , { 0xdb, 0xd9       }, 2, 0, 0, 0 }, /* +i    FCMOVNU ST(0), ST(i)       */
+
+/*
+
+D9 E5 FXAM Valid Valid Classify value or number in ST(0).k register.
+
+DB F0+i FCOMI ST, ST(i) Valid Valid Compare ST(0) with ST(i) and set status flags accordingly.
+DF F0+i FCOMIP ST, ST(i) Valid Valid Compare ST(0) with ST(i), set status flags accordingly, and pop register stack.
+DB E8+i FUCOMI ST, ST(i) Valid Valid Compare ST(0) with ST(i), check for ordered values, and set status flags accordingly.
+DF E8+i FUCOMIP ST, ST(i) Valid Valid Compare ST(0) with ST(i), check for ordered values, set status flags accordingly, and pop register stack.
+
+DA /2 FICOM m32int Valid Valid Compare ST(0) with m32int.
+DA /3 FICOMP m32int Valid Valid Compare ST(0) with m32int and pop stack register.
+
+
+DA C0+i FCMOVB ST(0), ST(i) Valid Valid Move if below (CF=1).
+DA C8+i FCMOVE ST(0), ST(i) Valid Valid Move if equal (ZF=1).
+DA D0+i FCMOVBE ST(0), ST(i) Valid Valid Move if below or equal (CF=1 or ZF=1).
+DA D8+i FCMOVU ST(0), ST(i) Valid Valid Move if unordered (PF=1).
+DB C0+i FCMOVNB ST(0), ST(i) Valid Valid Move if not below (CF=0).
+DB C8+i FCMOVNE ST(0), ST(i) Valid Valid Move if not equal (ZF=0).
+DB D0+i FCMOVNBE ST(0), ST(i) Valid Valid Move if not below or equal (CF=0 and ZF=0).
+DB D8+i FCMOVNU ST(0), ST(i) Valid Valid Move if not unordered (PF=0).
+
+D9 C0+i FLD ST(i) Push ST(i) onto the FPU register stack.
 
 DB /2 FIST m32int Store ST(0) in m32int.
 DB /3 FISTP m32int Store ST(0) in m32int and pop register stack.
@@ -185,10 +275,6 @@ DD /2 FST m64fp Copy ST(0) to m64fp.
 DD D0+i FST ST(i) Copy ST(0) to ST(i).
 D9 /3 FSTP m32fp Copy ST(0) to m32fp and pop register stack.
 DD D8+i FSTP ST(i) Copy ST(0) to ST(i) and pop register stack.
-
-DD /0 FLD m64fp Push m64fp onto the FPU register stack.
-DB /5 FLD m80fp Push m80fp onto the FPU register stack.
-D9 C0+i FLD ST(i) Push ST(i) onto the FPU register stack.
 
 D9 E8 FLD1 Push +1.0 onto the FPU register stack.
 D9 E9 FLDL2T Push log210 onto the FPU register stack.
@@ -206,6 +292,11 @@ DC C8+i FMUL ST(i), ST(0) Multiply ST(i) by ST(0) and store result in ST(i).
 DE C8+i FMULP ST(i), ST(0) Multiply ST(i) by ST(0), store result in ST(i), and pop the register stack.
 DE C9 FMULP Multiply ST(1) by ST(0), store result in ST(1), and pop the register stack.
 DA /1 FIMUL m32int Multiply ST(0) by m32int and store result in ST(0).
+
+D9 F8 FPREM Valid Valid Replace ST(0) with the remainder obtained from dividing ST(0) by ST(1).
+D9 F0 F2XM1
+D9 E0 FCHS Valid Valid Complements sign of ST(0).
+D9 FF FCOS Valid Valid Replace ST(0) with its cosine.
 
 D9 E1 FABS Replace ST with its absolute value.
 
@@ -225,8 +316,6 @@ D9 FA FSQRT Computes square root of ST(0) and stores the result in ST(0).
 D9 FF FCOS Replace ST(0) with its cosine.
 
 */
-
-#endif
 
 #if 0 /* crash, why? */
   { "popcnt"                 , { 0xf3, 0x0f, 0xb8  }, 3, 1, 0, 0 }, /* /r    POPCNT  r32,   r/m32       */

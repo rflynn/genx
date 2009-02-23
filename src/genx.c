@@ -15,6 +15,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <float.h>
 #include <time.h>
 #include <math.h>
 #include "typ.h"
@@ -23,7 +24,7 @@
 #include "gen.h"
 
 #define GEN_DEADEND   1000      /* start over after this many generations of no progress */
-#define POP_KEEP      16        /* keep this many from generation to generation */
+#define POP_KEEP      8         /* keep this many from generation to generation */
 #define MINIMIZE_LEN  1         /* do we care about finding the shortest solution, or just any match? */
 
 extern const struct x86 X86[X86_COUNT];
@@ -35,9 +36,21 @@ extern const struct x86 X86[X86_COUNT];
  * if you don't *know* what the function is, then just populate
  * Target instead
  */
-static int magic(int a)
+static float magic(float x)
 {
-  return (int)sqrt(a);
+
+  return x * 0.5f;
+
+#if 0
+  /* infamous Quake 3 sqrt */
+  float xhalf = 0.5f * x;
+  int i = *(int*)&x;              /* get bits for floating value */
+  i = 0x5f3759df - (i>>1);        /* gives initial guess y0 */
+  x = *(float*)&i;                /* convert bits back to float */
+  x = x * (1.5f - xhalf * x * x); /* Newton step, repeating increases accuracy */
+  return x;
+#endif
+
 }
 
 /*
@@ -46,33 +59,25 @@ static int magic(int a)
  * sum the difference from magic(input)
  */
 /* NOTE: lib-ize so we can include this in a separate program */
-static const int Input[] = {
-  0,
-  7,
-  21,
-  49,
-  105,
-  217,
-  441,
-  889,
-  1785,
-  3577,
-  7161,
-  14329,
-  28665,
-  57337,
-  114681,
-  229369,
-  458745,
-  917497,
-  1835001,
-  3670009,
-  7340025
+static const float Input[] = {
+  0.f,
+  1.f,
+  2.f,
+  3.f,
+  4.f,
+  1e1f,
+  1e2f,
+  1e3f,
+  1e4f,
+  1e5f,
+  1e6f,
+  1e7f,
+  1e10f
 };
 
 static struct target {
-  int in,
-      out;
+  float in,
+        out;
 } Target[256] = {
  { 0, 0 }
 };
@@ -80,13 +85,16 @@ static u32 TargetLen = 0;
 
 /********************* END INPUT PART *****************************/
 
-static void calc_target(const int in[], unsigned cnt)
+static void calc_target(const float in[], unsigned cnt)
 {
   unsigned i;
-  TargetLen = (int)cnt;
+  TargetLen = cnt;
+  printf("TargetLen <- %u\n", cnt);
   for (i = 0; i < TargetLen; i++) {
     Target[i].in = in[i];
     Target[i].out = magic(in[i]);
+    printf("Target %3u %11g -> %11g\n",
+      i, Target[i].in, Target[i].out);
   }
 }
 
@@ -99,65 +107,101 @@ static void input_init(void)
  * given a candidate function and an input, pass input as a parameter
  * and execute 'f'
  */
-static inline int asm_func_shim(func f, int in)
+static float asm_func_shim(func f, float in)
 {
-  int out;
-  __asm__(
+  float out,
+        wtf;
+  asm volatile(
     /* save and zero regs to prevent cheating by called function */
     /* note: eax contains param 'in' */
-    "push %%ebx\n"
-    "push %%ecx\n"
-    "push %%edx\n"
-    "xor  %%ebx, %%ebx\n"
-    "xor  %%ecx, %%ecx\n"
-    "xor  %%edx, %%edx\n"
+    "push %%eax;"
+    "push %%ebx;"
+    "push %%ecx;"
+    "push %%edx;"
+    "xor  %%eax, %%eax;"
+    "xor  %%ebx, %%ebx;"
+    "xor  %%ecx, %%ecx;"
+    "xor  %%edx, %%edx;"
     /* pass in first parameter */
-    "movl %1, (%%esp)\n"  
+#if 0
+    "movl %1, (%%esp);"
+#else
+    "fld  %1;"
+    "fstp (%%esp);"
+#endif
     /* call function pointer */
-    "call *%2\n"          
+    "call *%2;"
+    "fst   %0;"
+    /* aha! this took me a long time to figure out...
+     * x86 uses a stack for all flops, which is stateful;
+     * the stack is 8 deep, so after every function we
+     * blow away any possible contents of said stack
+     * so as to ensure we do not carry any data on the stack
+     * between calls
+     */
+    "fstp  %3;"
+    "fstp  %3;"
+    "fstp  %3;"
+    "fstp  %3;"
+    "fstp  %3;"
+    "fstp  %3;"
+    "fstp  %3;"
+    "fstp  %3;"
     /* restore regs */
-    "pop  %%edx\n"
-    "pop  %%ecx\n"
-    "pop  %%ebx\n"
-    : "=a" (out)
-    : "r" (in), "m" (f));
+    "pop  %%edx;"
+    "pop  %%ecx;"
+    "pop  %%ebx;"
+    "pop  %%eax;"
+    : "=m"(out)
+    : "m"(in), "m"(f), "m"(wtf));
   return out;
-} 
+}
+
+int Dump = 0; /* verbosity level */
 
 /**
  * given a candidate function, test it against all input and return a
  * score -- a distance from the ideal output.
  * a score of 0 indicates a perfect match against the test input
  */
-u32 score(func f, int verbose)
+float score(func f, int verbose)
 {
-  u32 score = 0;
+  float scor = 0.f;
   u32 i;
-  if (verbose)
+  if (verbose || Dump >= 2)
     printf("%11s %11s %11s %11s %11s\n"
            "----------- ----------- ----------- ----------- -----------\n",
            "in", "target", "actual", "diff", "diffsum");
   for (i = 0; i < TargetLen; i++) {
-    int diff,   /* difference between target and sc */
-        sc = asm_func_shim(f, i);
-    diff = Target[i].out - sc;
-    diff = abs(diff);
-    /* detect overflow */
-    if ((u32)(INT_MAX - diff) < score) {
-      score = (u32)0xFFFFFFFF;
+    float diff,   /* difference between target and sc */
+          sc;
+    if (verbose || Dump >= 2)
+      printf("%11g %11g ", Target[i].in, Target[i].out);
+    sc = asm_func_shim(f, Target[i].in);
+    if (verbose || Dump >= 2)
+      printf("%11g ", sc);
+    if (isnan(sc) || isinf(sc)) {
+      scor = FLT_MAX;
+      if (verbose || Dump >= 2)
+        fputc('\n', stdout);
       break;
     }
-    score += diff;
-    if (verbose)
-      printf("%11d %11d %11d %11d %11" PRIu32 "\n",
-        Target[i].in, Target[i].out, sc, diff, score);
+    diff = Target[i].out - sc;
+    diff = fabs(diff);
+    /* detect overflow */
+    if (FLT_MAX - diff < scor) {
+      scor = FLT_MAX;
+      break;
+    }
+    scor += diff;
+    if (verbose || Dump >= 2)
+      printf("%11g %11g\n", diff, scor);
   }
-  if (verbose)
-    printf("score=%" PRIu32 "\n", score);
-  return score;
+  if (verbose || Dump >= 2)
+    printf("score=%g\n", scor);
+  //assert(scor > 0.f);
+  return scor;
 }
-
-int Dump = 0; /* verbosity level */
 
 int main(int argc, char *argv[])
 {
@@ -184,7 +228,7 @@ int main(int argc, char *argv[])
    */
   if (0 == TargetLen)
     input_init();
-  CurrBest.score = ~0;
+  CurrBest.score = FLT_MAX;
   CurrBest.geno.len = 0;
   rnd32_init((u32)time(NULL));
   setvbuf(stdout, (char *)NULL, _IONBF, 0); /* unbuffer stdout */
@@ -207,11 +251,12 @@ int main(int argc, char *argv[])
       if (progress) {
         /* only display best if it's changed; raises signal/noise ration */
         gen_dump(&Pop.indiv[0].geno, stdout);
-        printf("score=%" PRIu32 "\n", Pop.indiv[0].score);
+        printf("->score=%g\n", Pop.indiv[0].score);
         /* show detailed score from best candidate */
         (void)gen_compile(&Pop.indiv[0].geno, x86);
         (void)score((func)x86, 1);
         if (progress) {
+          assert(Pop.indiv[0].score < CurrBest.score);
           memcpy(&CurrBest, Pop.indiv, sizeof CurrBest);
           gen_since_best = 0;
         }
@@ -232,13 +277,9 @@ int main(int argc, char *argv[])
     }
     generation++;
     gen_since_best++;
-  } while (
-    0 != CurrBest.score /* perfect match */
-    /* favor shorter solutions even after perfect match found */
-    || FUNC_PREFIX_LEN + FUNC_SUFFIX_LEN + 1 != Pop.indiv[0].geno.len
-  );
+  } while (0.f != CurrBest.score); /* perfect match */
   printf("done.\n");
-  (void)gen_compile(&Pop.indiv[0].geno, x86);
+  (void)gen_compile(&CurrBest.geno, x86);
   (void)score((func)x86, 1);
   return 0;
 }

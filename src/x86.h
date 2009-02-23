@@ -67,7 +67,7 @@ enum {
   LEAVE,
   RET,
   /* begin instructions considered for general use with a function body */
-#define X86_FIRST ADD_IMM8
+//#define X86_FIRST ADD_IMM8
   ADD_IMM8,
   ADD_R32,
   IMUL_IMM,
@@ -138,6 +138,61 @@ enum {
   JE,
   JNZ
 #endif
+
+
+  /* these 4 are to generate a single random float value and
+   * get it into the float stack */
+  SUB_4_ESP,
+  ADD_4_ESP,
+  MOV_IMM32_EAX,
+  MOV_EAX_4EBP,
+  FLD_4EBP,
+
+
+  FLD,
+  FILD,
+  //FISTTP,
+  FIST,
+  FISTP,
+
+#define X86_FIRST F2XM1
+
+  F2XM1,
+  FPREM,
+  FSQRT,
+  FSINCOS,
+  FSCALE,
+  FSIN,
+  FCOS,
+  FCHS,
+  FXAM,
+  FLD1,
+  FLDL2T,
+  FLDL2E,
+  FLDPI,
+  FLDLG2,
+  FLDLN2,
+  FABS,
+  FMULP,
+  FADDP,
+
+  FCOMI,
+  FCOMIP,
+  FUCOMI,
+  FUCOMIP,
+
+  FICOM,
+  FICOMP,
+
+  FCMOVB,
+  FCMOVE,
+  FCMOVBE,
+  FCMOVU,
+  FCMOVNB,
+  FCMOVNE,
+  FCMOVNBE,
+  FCMOVNU,
+
   X86_COUNT /* last, special */
 };
 
