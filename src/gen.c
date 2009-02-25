@@ -7,8 +7,10 @@
  *   <URL: http://www.opensource.org/licenses/mit-license.php>
  */
 
+#define _XOPEN_SOURCE /* drand48() via stdlib */
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "typ.h"
 #include "rnd.h"
@@ -66,8 +68,8 @@ static void gen_mutate(genotype *g, const double mutate_rate)
    */
   u32 doff   = randr(GEN_PREFIX_LEN, g->len),
       /* TODO: incorporate mutate_rate somehow! */
-      dlen   = (u32)(rand01() * (g->len - doff)),
-      slen   = (u32)(rand01() *
+      dlen   = (u32)(rand01() * mutate_rate * (g->len - doff)),
+      slen   = (u32)(rand01() * mutate_rate *
         (CHROMO_MAX - GEN_SUFFIX_LEN - (g->len - dlen))),
       suflen = g->len - (doff + dlen); /* data after the mutation */
 #if 0

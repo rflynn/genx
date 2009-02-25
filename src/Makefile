@@ -2,17 +2,24 @@
 # $Id$
 #
 
-CFLAGS = -W -Wall -pedantic -std=gnu99 -Wno-unused -Os -ggdb
+CFLAGS = -W -Wall -pedantic -std=c99 -m32
 LDFLAGS = -lm
 BIN = genx
 ALL = genx
 OBJ = rnd.o x86.o gen.o run.o genx.o
 
+debug:
+	$(MAKE) "CFLAGS=$(CFLAGS) -O0 -ggdb" int
+
+fast:
+	$(MAKE) "CFLAGS=$(CFLAGS) -Os -ggdb" int
+
 int:
-	make "CFLAGS=$(CFLAGS) -DX86_USE_INT" genx
+	$(MAKE) "CFLAGS=$(CFLAGS) -DX86_USE_INT" genx
 
 float:
-	make "CFLAGS=$(CFLAGS) -DX86_USE_FLOAT" genx
+	$(MAKE) "CFLAGS=$(CFLAGS) -DX86_USE_FLOAT" genx
+
 
 genx: $(OBJ)
 

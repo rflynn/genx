@@ -38,32 +38,32 @@ extern const struct x86 X86[X86_COUNT];
  * if you don't *know* what the function is, then just populate
  * Target instead
  */
-static float magic(float x)
+static float magic(float x[])
 {
 
-  //return x * 0.5f;
+  //return x[0] * 0.5f;
   //return 1.5;
-  //return sin(x);   // FSIN
+  //return sin(x[0]);   // FSIN
   //return M_PI;     // FLDPI
-  //return floor(x); // FLD
-  //return ceil(x);
-  //return fmod(x, 5.f);
-  //return x - 1;
-  //return x * 100.f;
+  //return floor(x[0]); // FLD
+  //return ceil(x[0]);
+  //return fmod(x[0], 5.f);
+  //return x[0] - 1;
+  //return x[0] * 100.f;
 
   /* infamous Quake 3 inv sqrt */
   float magic = 0x5f3759df;
-  float xhalf = 0.5f * x;
-  int i = *(int*)&x;              /* get bits for floating value */
-  i = magic - (i>>1);             /* gives initial guess y0 */
-  x = *(float*)&i;                /* convert bits back to float */
-  x = x * (1.5f - xhalf * x * x); /* Newton step, repeating increases accuracy */
-  return x;
+  float xhalf = 0.5f * x[0];
+  int i = *(int*)x;                   /* get bits for floating value */
+  i = magic - (i>>1);                 /* gives initial guess y0 */
+  x[0] = *(float*)&i;                 /* convert bits back to float */
+  x[0] = x[0]*(1.5f-xhalf*x[0]*x[0]); /* Newton step, repeating increases accuracy */
+  return x[0];
 }
 #endif
 
 #if 0
-static s32 magic(s32 x[], unsigned n)
+static s32 magic(s32 x[])
 {
   /*
    * we'll try to find a bitwise solution
@@ -84,7 +84,7 @@ static s32 magic(s32 x[], unsigned n)
 
 #ifdef X86_USE_INT
 /* test multi-parameter */
-static s32 magic(s32 x[], unsigned n)
+static s32 magic(s32 x[])
 {
   //return x[0] + x[1];
   //return x[0] * x[1];
@@ -149,7 +149,7 @@ static void calc_target(void)
   unsigned i;
   printf("TargetLen <- %u\n", TargetLen);
   for (i = 0; i < TargetLen; i++) {
-    Target[i].out = magic(Target[i].in, sizeof Target[i].in / sizeof Target[i].in[0]);
+    Target[i].out = magic(Target[i].in);
     printf("Target %3u (%11" PRIt ",%11" PRIt ",%11" PRIt ") -> %11" PRIt "\n",
       i, Target[i].in[0], Target[i].in[1], Target[i].in[2], Target[i].out);
   }

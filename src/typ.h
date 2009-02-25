@@ -33,7 +33,7 @@ struct target {
 };
 #endif
 
-#if defined(__GNUC__) 
+#if defined(__GNUC__) && !(defined(__STRICT_ANSI__))
 /*
  * libc defines these as "x" and "u", but this results in values
  * not being truncated to 8 bits

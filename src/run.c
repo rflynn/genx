@@ -1,3 +1,11 @@
+/* ex: set ff=dos ts=2 et: */
+/* $Id$ */
+/*
+ * Copyright 2009 Ryan Flynn <URL: http://www.parseerror.com/>
+ *
+ * Released under the MIT License, see the "LICENSE.txt" file or
+ *   <URL: http://www.opensource.org/licenses/mit-license.php>
+ */
 
 #include <assert.h>
 #include <stdio.h>
@@ -21,7 +29,7 @@ extern u32 TargetLen;
 static float shim_f(const void *f, float a, float b, float c)
 {
   float out;
-  asm volatile(
+  __asm__ volatile(
     /* pass in parameter(s) */
     "fld  %2;"
     "fstp    (%%esp);"
@@ -65,7 +73,7 @@ float score(const void *f, int verbose)
     printf("%11s %11s %11s %11s %11s %11s %11s\n"
            "----------- ----------- ----------- "
            "----------- ----------- ----------- -----------\n",
-           "a", "b", "c", "target", "actual", "diff", "diffsum");
+           "a", "b", "c", "expected", "actual", "diff", "diffsum");
   for (i = 0; i < TargetLen; i++) {
     float diff,   /* difference between target and sc */
           sc;
@@ -111,7 +119,7 @@ u32 score(const void *f, int verbose)
     printf("%11s %11s %11s %11s %11s %11s %11s\n"
            "----------- ----------- ----------- "
            "----------- ----------- ----------- -----------\n",
-           "a", "b", "c", "target", "actual", "diff", "diffsum");
+           "a", "b", "c", "expected", "actual", "diff", "diffsum");
   for (i = 0; i < TargetLen; i++) {
     u32 sc   = shim_i(f, Target[i].in[0], Target[i].in[1], Target[i].in[2]),
         diff = popcnt(sc ^ Target[i].out);
@@ -133,7 +141,7 @@ u32 score(const void *f, int verbose)
 static u32 shim_i(const void *f, u32 x, u32 y, u32 z)
 {
   u32 out;
-  asm volatile(
+  __asm__ volatile(
     /*
      * zero all registers to ensure candidate
      * function doesn't have access to anything
@@ -143,12 +151,19 @@ static u32 shim_i(const void *f, u32 x, u32 y, u32 z)
      * the ebx register, so we'll just push and
      * pop it manually...
      */
-    //"push %%eax;"
+#ifdef __x86_64__
+    "pushq %%rbx;"
+    "pushq %%rcx;"
+    "pushq %%rdx;"
+    "pushq %%rdi;"
+    "pushq %%rsi;"
+#else
     "push %%ebx;"
     "push %%ecx;"
     "push %%edx;"
     "push %%edi;"
     "push %%esi;"
+#endif
     /* pass in parameters */
     "movl %2,0x8(%%esp);"
     "movl %3,0x4(%%esp);"
@@ -164,15 +179,21 @@ static u32 shim_i(const void *f, u32 x, u32 y, u32 z)
     "cpuid;"
     "call *%1;"
     /* restore ebx */
+#ifdef __x86_64__
+    "popq %%rsi;"
+    "popq %%rdi;"
+    "popq %%rdx;"
+    "popq %%rcx;"
+    "popq %%rbx;"
+#else
     "pop  %%esi;"
     "pop  %%edi;"
     "pop  %%edx;"
     "pop  %%ecx;"
     "pop  %%ebx;"
-    //"pop  %%eax;"
+#endif
     : "=a"(out)
     : "m"(f), "c"(x), "d"(y), "D"(z));
-    //: "ecx", "edx", "edi", "esi");
   return out;
 }
 
