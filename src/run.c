@@ -130,22 +130,20 @@ static u32 shim_i(const void *f, u32 in)
   asm volatile(
     /* save and zero regs to prevent cheating by called function */
     /* note: eax contains param 'in' */
-    "push %%ebx;"
     "push %%ecx;"
     "push %%edx;"
-    //"xor  %%eax, %%eax;"
-    "xor  %%ebx, %%ebx;"
     "xor  %%ecx, %%ecx;"
     "xor  %%edx, %%edx;"
     /* pass in first parameter */
     "movl %1, (%%esp);"
+    "xor  %%eax, %%eax;"
+    "xor  %%ebx, %%ebx;"
     /* call function pointer */
     "call *%2;"
     "pop  %%edx;"
     "pop  %%ecx;"
-    "pop  %%ebx;"
     : "=a"(out)
-    : "r"(in), "m"(f));
+    : "b"(in), "m"(f));
   return out;
 }
 
