@@ -16,9 +16,9 @@
 #include "typ.h"
 
 #ifdef X86_USE_FLOAT
-float score(const void *f, int verbose);
+float score(const void *f, u32 test_cnt, int verbose);
 #else
-u32   score(const void *f, int verbose);
+u32   score(const void *f, u32 test_cnt, int verbose);
 #endif
 u32 popcnt(u32 n);
 

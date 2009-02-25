@@ -48,7 +48,7 @@ void pop_gen(struct pop *p,
              const double cross_rate,
              const double mutate_rate);
 
-void pop_score(struct pop *p);
+void pop_score(struct pop *p, u32 test_cnt);
 
 #ifdef X86_USE_FLOAT
 # define GENOSCORE_SCORE(gs)  ((gs)->score.f)
@@ -101,6 +101,15 @@ void pop_score(struct pop *p);
   } while (0)
 #endif
 
+struct genx_iface_int {
+  s32 (*func)(s32);
+  struct {
+    unsigned   len;
+    s32      (*in_out)[2];
+  } test;
+  u32   (*score)();
+};
+
 /*
  * beginnings of eventual interface describing a problem and
  * providing all parameters necessary to begin an attempt to
@@ -112,85 +121,38 @@ void pop_score(struct pop *p);
  * open question, as is how we will be describe and generate
  * functions for operating on structures in memory.
  */
-struct genx_iface_u32 {
-	u32 (*func)(u32);
-	int (*done)();
-	struct {
-		unsigned   len;
-		u32      (*in_out)[2];
-	} target;
-	struct {
-		u32      param_cnt;     /*
-		                         * number of parameters
-														 */
-		u32      chromo_min,    /*
-		                         * Minimum number of chromosomes (x86 operations)
-														 * to be considered in a solution.
-														 * 
-														 * Default: 8
-														 * Minimum: 1
-														 * Maximum: 64
-														 */
-		         chromo_max,    /*
-		                         * Maximum number of chromosomes (x86 operations)
-														 * to be considered in a solution.
-														 * 
-														 * Default: 32
-														 * Minimum: 1
-														 * Maximum: 128
-														 */
-		         gen_size,			/*
-		                         * How many genotypes do you wish to produce in
-														 * each generation?
-														 *
-														 * Default: 65536
-														 * Minimum: 2
-														 * Maximum: 16777216
-														 */
-		         gen_keep;			/* 
-														 * How many of the top genotypes should be used
-		                         * to create the next generation?
-														 *
-														 * Default: 8
-														 * Minimum: 1
-														 * Maximum: 'gen_size'-1
-														 */
-		u64 		 gen_deadend;   /* 
-		                         * After how many generations do you want to give
-		                         * up on mutating the current "best" and re-
-														 * generate an entire generation from scratch?
-														 *
-														 * Default: 10,000
-														 * Minimum: 2
-														 * Maximum: 0 (never)
-														 */
-		unsigned minimize_len:1,/*
-		                         * Do you consider a genotype with fewer chromosomes
-														 * but equivalent functionality to be a better
-														 * solution? Obviously it is, but do you want to
-														 * spend precious CPU on it?
-														 *
-														 * Since simply finding a good match is much
-														 * more important, and that one can always search
-														 * for more canonical mutations of a solution
-														 * once one has been settled on, the default action
-														 * is to not worry about it.
-														 *
-														 * Default: 0
-														 * Minimum: 0
-														 * Maximum: 1
-														 */
-						 int_ops:1,			/*
-						                 * Do you want to consider
-														 */
-						 float_ops:1,
-						 algebra_ops:1,
-						 bit_ops:1,
-             random_const:1;/*
-                             * Are we allowed to generate random constant values
-                             * or must we stick with only the input given to us?
+struct genx_iface {
+  
+  struct {
+    u32      param_cnt;     /* number of parameters */
+    u32      chromo_min,    /* Minimum number of chromosomes (x86 operations)
+                             * to be considered in a solution.
+                             * Default=8 Minimum=1 Maximum=64
                              */
-	} opt;       
+             chromo_max,    /* Maximum number of chromosomes (x86 operations)
+                             * to be considered in a solution.
+                             * Default=32 Minimum=1 Maximum=128
+                             */
+             gen_size,      /* How many genotypes do you wish to produce in
+                             * each generation?
+                             * Default=65536 Minimum=2 Maximum=16777216
+                             */
+             gen_keep,      /* How many of the top genotypes should be used
+                             * to create the next generation?
+                             * Default=8 Minimum=1 Maximum=gen_size-1
+                             */
+             gen_deadend;   /* After how many generations do you want to give
+                             * up on mutating the current "best" and re-
+                             * generate an entire generation from scratch?
+                             * Default=10,000 Minimum=2 Maximum=0 (never)
+                             */
+    unsigned int_ops:1,      /* Include integer operations in our functions? */
+             float_ops:1,   /* Include floating point operations? */
+             algebra_ops:1, /*  */
+             bit_ops:1,     /*  */
+             random_const:1;/* Are we allowed to generate random constant values
+                             * or must we stick with only the input given to us?  */
+  } opt;       
 };
 
 #endif

@@ -15,23 +15,7 @@ TODO:
    first (if possible), as overflow/output differences will be more quickly
    noticed.
 
- * idea for possibly better "distance" scoring
-  
-    currently we use the arithmetic distance between a target output and
-    a function's real output, this works well.
-
-    however, fundamentally, this assigns relative value to bits based
-    on their position; given two outputs, one differing from the target by
-    a single low bit and the other by a single high bit will result in the
-    "high bit" difference being considered very far away from the target.
-
-    this makes sense if only considering arithmetic/algebraic operations,
-    but not if we consider bitwise operations (rotations, xor, etc.), because
-    we should treat all bits of equal importance.
-
-    therefore, when considering bitwise operations, we should devise some
-    distance scheme that counts only the number of bits differing from
-    the target!
+ * add support for multiple CPUs
 
  * add support for the saving/retrieval of jobs, which will allow tasks to be
    resumed if the program crashes, and would even allow the transfer of jobs
@@ -50,6 +34,8 @@ TODO:
 
         this shouldn't be too hard, too CPU-intensive or too complex, but
         it will get people more excited about using it.
+
+ * add support for x86-64... dammit :/
 
  * define a proper interface so we can lib-ize the evolution/x86 part and can
    separate the "problem" we are trying to solve into a separate program.

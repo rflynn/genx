@@ -51,8 +51,10 @@ static float shim_f(const void *f, float in)
  * given a candidate function, test it against all input and return a
  * score -- a distance from the ideal output.
  * a score of 0 indicates a perfect match against the test input
+ * @param f function to run
+ * @param test_cnt number of targets to run it against
  */
-float score(const void *f, int verbose)
+float score(const void *f, u32 test_cnt, int verbose)
 {
   float scor = 0.f;
   u32 i;
@@ -60,7 +62,7 @@ float score(const void *f, int verbose)
     printf("%11s %11s %11s %11s %11s\n"
            "----------- ----------- ----------- ----------- -----------\n",
            "in", "target", "actual", "diff", "diffsum");
-  for (i = 0; i < TargetLen; i++) {
+  for (i = 0; i < test_cnt; i++) {
     float diff,   /* difference between target and sc */
           sc;
     if (verbose || Dump >= 2)
@@ -99,7 +101,7 @@ static u32 shim_i(const void *, u32 in);
  * score -- a distance from the ideal output.
  * a score of 0 indicates a perfect match against the test input
  */
-u32 score(const void *f, int verbose)
+u32 score(const void *f, u32 test_cnt, int verbose)
 {
   u32 scor = 0;
   u32 i;
@@ -107,7 +109,7 @@ u32 score(const void *f, int verbose)
     printf("%11s %11s %11s %11s %11s\n"
            "----------- ----------- ----------- ----------- -----------\n",
            "in", "target", "actual", "diff", "diffsum");
-  for (i = 0; i < TargetLen; i++) {
+  for (i = 0; i < test_cnt; i++) {
     u32 sc   = shim_i(f, Target[i].in),
         diff = popcnt(sc ^ Target[i].out);
     scor += diff;
@@ -116,7 +118,7 @@ u32 score(const void *f, int verbose)
         Target[i].in, Target[i].out, sc, diff, scor);
   }
   if (verbose || Dump >= 2)
-    printf("score=%u\n", scor);
+    printf("tests=%u score=%u\n", test_cnt, scor);
   return scor;
 }
 
@@ -128,8 +130,7 @@ static u32 shim_i(const void *f, u32 in)
 {
   u32 out;
   asm volatile(
-    /* save and zero regs to prevent cheating by called function */
-    /* note: eax contains param 'in' */
+    /* save regs */
     "push %%ecx;"
     "push %%edx;"
     "xor  %%ecx, %%ecx;"

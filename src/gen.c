@@ -223,7 +223,7 @@ int genoscore_lencmp(const void *va, const void *vb)
        - (GENOSCORE_SCORE(a) < GENOSCORE_SCORE(b));
 }
 
-void pop_score(struct pop *p)
+void pop_score(struct pop *p, u32 test_cnt)
 {
   static u8 x86[1024];
   u32 i;
@@ -233,7 +233,7 @@ void pop_score(struct pop *p)
       x86_dump(x86, x86len, stdout);
     if (Dump > 1)
       (void)gen_dump(&p->indiv[i].geno, stdout);
-    GENOSCORE_SCORE(&p->indiv[i]) = score(x86, 0);
+    GENOSCORE_SCORE(&p->indiv[i]) = score(x86, test_cnt, 0);
   }
   qsort(p->indiv, sizeof p->indiv / sizeof p->indiv[0],
                                     sizeof p->indiv[0], genoscore_cmp);

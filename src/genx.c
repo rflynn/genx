@@ -161,17 +161,75 @@ static void calc_target(void)
 
 int Dump = 0; /* verbosity level */
 
+static struct pop Pop;
+static genoscore  CurrBest;
+static u8 x86[1024];
+
+static u32 Pop_Keep = POP_KEEP;
+
+/* mutation rates */
+static const double Mutate_Rate = 0.2,  /*  */
+                    Cross_Rate  = 0.7;  /*  */
+
+static void progress(void)
+{
+  /* only display best if it's changed; raises signal/noise ration */
+  memcpy(&CurrBest, Pop.indiv, sizeof Pop.indiv[0]);
+  gen_dump(&CurrBest.geno, stdout);
+  printf("->score=%" PRIt "\n",
+    GENOSCORE_SCORE(&Pop.indiv[0]));
+}
+
+static void evolve(void)
+{
+  u64          indivs    = 0;
+  u32          gen_cnt   = 0,    
+               gen_since = 0, /* dead end counter */
+               test_cnt;
+  CurrBest.geno.len = 0;
+  for (test_cnt = 1; test_cnt < TargetLen; test_cnt++) {
+    GENOSCORE_SCORE(&CurrBest) = GENOSCORE_MAX;
+    do {
+      int better;
+      pop_score(&Pop, test_cnt);  /* test it and sort best ones */
+      indivs += sizeof Pop.indiv / sizeof Pop.indiv[0];
+      better = -1 == genoscore_cmp(&Pop.indiv[0], &CurrBest);
+      if (better || 0 == gen_cnt % 100) {
+        /* display generation regularly or on progress */
+        time_t t = time(NULL);
+        printf("GENERATION %5" PRIu32 " %10" PRIu64 " genotypes @%s", gen_cnt, indivs, ctime(&t));
+        if (better) {
+          progress();
+          /* show detailed score from best candidate */
+          (void)gen_compile(&CurrBest.geno, x86);
+          (void)score(x86, test_cnt, 1);
+          gen_since = 0;
+        }
+      }
+      if (gen_since < GEN_DEADEND) {
+        pop_gen(&Pop, Pop_Keep, Cross_Rate, Mutate_Rate); /* retain best from previous */
+      } else {
+        /* we have run GEN_DEADEND generations and haven't made any progress;
+         * throw out our top genetic material and start fresh, but still
+         * retain CurrBest, against which all new candidates are judged */
+        gen_dump(&CurrBest.geno, stdout);
+        (void)gen_compile(&CurrBest.geno, x86);
+        (void)score(x86, test_cnt, 1);
+        printf("No progress for %u generations, trying something new...\n", GEN_DEADEND);
+        pop_gen(&Pop, 0, Cross_Rate, Mutate_Rate); /* start over! */
+        gen_since = 0;
+      }
+      gen_cnt++;
+      gen_since++;
+    } while (!GENOSCORE_MATCH(&CurrBest));
+    printf("%" PRIu32 " tests matched...\n", test_cnt);
+  }
+  (void)gen_compile(&CurrBest.geno, x86);
+  (void)score(x86, TargetLen, 1);
+}
+
 int main(int argc, char *argv[])
 {
-  static struct pop Pop;
-  static u8 x86[1024];
-  /* mutation rates */
-  const double Mutate_Rate    = 0.2,  /*  */
-               Cross_Rate     = 0.7;  /*  */
-  genoscore    CurrBest;              /* save best found solution */
-  u64          indivs         = 0;    /* total creatures created; status */
-  u32          generation     = 0,    /* track time; status */
-               gen_since_best = 0;    /* dead end counter */
   /* show sizes of our core types in bytes */
   printf("sizeof Pop.indiv[0]=%u\n", sizeof Pop.indiv[0]);
   printf("sizeof Pop=%u\n", sizeof Pop);
@@ -189,57 +247,12 @@ int main(int argc, char *argv[])
    * if not called, Target[0..TargetLen-1].out assumed set
    */
   calc_target();
-  GENOSCORE_SCORE(&CurrBest) = GENOSCORE_MAX;
-  CurrBest.geno.len = 0;
   rnd32_init((u32)time(NULL));
   setvbuf(stdout, (char *)NULL, _IONBF, 0); /* unbuffer stdout */
   memset(&Pop, 0, sizeof Pop);
   pop_gen(&Pop, 0, Cross_Rate, Mutate_Rate); /* seminal generation */
-  /* evolve */
-  /*
-   * TODO: clean this up, pull it out of main
-   */
-  do {
-    int progress;
-    pop_score(&Pop);  /* test it and sort best ones */
-    indivs += sizeof Pop.indiv / sizeof Pop.indiv[0];
-    progress = -1 == genoscore_cmp(&Pop.indiv[0], &CurrBest);
-    if (progress || 0 == generation % 100) {
-      /* display generation regularly or on progress */
-      time_t t = time(NULL);
-      printf("GENERATION %5" PRIu32 " %10" PRIu64 " genotypes @%s",
-        generation, indivs, ctime(&t));
-      if (progress) {
-        /* only display best if it's changed; raises signal/noise ration */
-        memcpy(&CurrBest, Pop.indiv, sizeof Pop.indiv[0]);
-        gen_dump(&CurrBest.geno, stdout);
-        printf("->score=%" PRIt "\n",
-          GENOSCORE_SCORE(&Pop.indiv[0]));
-        /* show detailed score from best candidate */
-        (void)gen_compile(&CurrBest.geno, x86);
-        (void)score(x86, 1);
-        gen_since_best = 0;
-      }
-    }
-    if (gen_since_best < GEN_DEADEND) {
-      pop_gen(&Pop, POP_KEEP, Cross_Rate, Mutate_Rate); /* retain best from previous */
-    } else {
-      /* we have run GEN_DEADEND generations and haven't made any progress;
-       * throw out our top genetic material and start fresh, but still
-       * retain CurrBest, against which all new candidates are judged */
-      gen_dump(&CurrBest.geno, stdout);
-      (void)gen_compile(&CurrBest.geno, x86);
-      (void)score(x86, 1);
-      printf("No progress for %u generations, trying something new...\n", GEN_DEADEND);
-      pop_gen(&Pop, 0, Cross_Rate, Mutate_Rate); /* start over! */
-      gen_since_best = 0;
-    }
-    generation++;
-    gen_since_best++;
-  } while (!GENOSCORE_MATCH(&CurrBest));
+  evolve();
   printf("done.\n");
-  (void)gen_compile(&CurrBest.geno, x86);
-  (void)score(x86, 1);
   return 0;
 }
 
