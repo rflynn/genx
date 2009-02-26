@@ -7,11 +7,11 @@
  *   <URL: http://www.opensource.org/licenses/mit-license.php>
  */
 
-#define _XOPEN_SOURCE /* drand48() via stdlib */
 #include <assert.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#define _XOPEN_SOURCE 500 /* drand48() via stdlib */
+#include <stdlib.h>
 #include "typ.h"
 #include "rnd.h"
 #include "x86.h"

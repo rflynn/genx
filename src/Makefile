@@ -2,8 +2,8 @@
 # $Id$
 #
 
-CFLAGS = -W -Wall -pedantic -std=c99 -m32
-LDFLAGS = -lm
+CFLAGS = -W -Wall -pedantic -std=gnu99 -m32
+LDFLAGS = -lm -m32
 BIN = genx
 ALL = genx
 OBJ = rnd.o x86.o gen.o run.o genx.o

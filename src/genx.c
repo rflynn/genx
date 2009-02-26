@@ -7,8 +7,6 @@
  *   <URL: http://www.opensource.org/licenses/mit-license.php>
  */
 
-#define _XOPEN_SOURCE 500
-#include <stdlib.h>
 
 #include <assert.h>
 #include <stdio.h>
@@ -18,6 +16,8 @@
 #include <float.h>
 #include <time.h>
 #include <math.h>
+#define _XOPEN_SOURCE 500
+#include <stdlib.h>
 #include "typ.h"
 #include "rnd.h"
 #include "x86.h"

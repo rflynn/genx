@@ -178,7 +178,6 @@ static u32 shim_i(const void *f, u32 x, u32 y, u32 z)
     /* call function pointer */
     "cpuid;"
     "call *%1;"
-    /* restore ebx */
 #ifdef __x86_64__
     "popq %%rsi;"
     "popq %%rdi;"
