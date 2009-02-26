@@ -164,15 +164,14 @@ int main(int argc, char *argv[])
   static struct pop Pop;
   static u8 x86[1024];
   /* mutation rates */
-  const double Mutate_Rate    = 0.2,  /*  */
-               Cross_Rate     = 0.7;  /*  */
+  const double Mutate_Rate    = 0.2;  /*  */
   genoscore    CurrBest;              /* save best found solution */
   u64          indivs         = 0;    /* total creatures created; status */
   u32          generation     = 0,    /* track time; status */
                gen_since_best = 0;    /* dead end counter */
   /* show sizes of our core types in bytes */
-  printf("sizeof Pop.indiv[0]=%u\n", sizeof Pop.indiv[0]);
-  printf("sizeof Pop=%u\n", sizeof Pop);
+  printf("sizeof Pop.indiv[0]=%lu\n", (unsigned long)(sizeof Pop.indiv[0]));
+  printf("sizeof Pop=%lu\n", (unsigned long)(sizeof Pop));
   printf("FLT_EPSILON=%g\n", FLT_EPSILON);
   /* sanity-checks */
   assert(CHROMO_MAX > GEN_PREFIX_LEN + GEN_SUFFIX_LEN);
@@ -196,7 +195,7 @@ int main(int argc, char *argv[])
   memset(&Pop, 0, sizeof Pop);
   nice(+19); /* be as polite to any other programs as possible */
   Start = time(NULL);
-  pop_gen(&Pop, 0, Cross_Rate, Mutate_Rate); /* seminal generation */
+  pop_gen(&Pop, 0, Mutate_Rate); /* seminal generation */
   /* evolve */
   /*
    * TODO: clean this up, pull it out of main
@@ -224,7 +223,7 @@ int main(int argc, char *argv[])
       }
     }
     if (gen_since_best < GEN_DEADEND) {
-      pop_gen(&Pop, POP_KEEP, Cross_Rate, Mutate_Rate); /* retain best from previous */
+      pop_gen(&Pop, POP_KEEP, Mutate_Rate); /* retain best from previous */
     } else {
       /* we have run GEN_DEADEND generations and haven't made any progress;
        * throw out our top genetic material and start fresh, but still
@@ -233,7 +232,7 @@ int main(int argc, char *argv[])
       (void)gen_compile(&CurrBest.geno, x86);
       (void)score(x86, 1);
       printf("No progress for %u generations, trying something new...\n", GEN_DEADEND);
-      pop_gen(&Pop, 0, Cross_Rate, Mutate_Rate); /* start over! */
+      pop_gen(&Pop, 0, Mutate_Rate); /* start over! */
       gen_since_best = 0;
     }
     generation++;

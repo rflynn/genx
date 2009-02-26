@@ -90,7 +90,7 @@ static void gen_mutate(genotype *g, const double mutate_rate)
 }
 
 static void gen_gen(genotype *dst, const genotype *src,
-                    const double cross_rate, const double mutate_rate)
+                    const double mutate_rate)
 {
   if (src) {
     /* mutate an existing genotype */
@@ -108,7 +108,6 @@ static void gen_gen(genotype *dst, const genotype *src,
 
 void pop_gen(struct pop *p,
              u32 keep,
-             const double cross_rate,
              const double mutate_rate)
 {
   u32 i;
@@ -119,7 +118,7 @@ void pop_gen(struct pop *p,
      */
     for (i = keep; i < sizeof p->indiv / sizeof p->indiv[0]; i++) {
       const genotype *src = &p->indiv[randr(0, keep-1)].geno;
-      gen_gen(&p->indiv[i].geno, src, cross_rate, mutate_rate);
+      gen_gen(&p->indiv[i].geno, src, mutate_rate);
       GENOSCORE_SCORE(p->indiv+i) = 0;
     }
   } else {
@@ -128,7 +127,7 @@ void pop_gen(struct pop *p,
      * use a 'src' element
      */
     for (i = keep; i < sizeof p->indiv / sizeof p->indiv[0]; i++) {
-      gen_gen(&p->indiv[i].geno, NULL, cross_rate, mutate_rate);
+      gen_gen(&p->indiv[i].geno, NULL, mutate_rate);
       GENOSCORE_SCORE(p->indiv+i) = 0;
     }
   }

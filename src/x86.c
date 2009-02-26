@@ -268,8 +268,8 @@ u8 x86_by_name(const char *descr)
 void x86_init(void)
 {
   /* double-check instruction enum and table */
-  printf("X86_COUNT=%u (sizeof X86 / sizeof X86[0])=%u\n",
-    X86_COUNT, sizeof X86 / sizeof X86[0]);
+  printf("X86_COUNT=%u (sizeof X86 / sizeof X86[0])=%lu\n",
+    X86_COUNT, (unsigned long)(sizeof X86 / sizeof X86[0]));
 #if 0
   assert(0 == strncmp("or",      X86[OR_R32]     .descr, 2));
   assert(0 == strncmp("cmpxchg", X86[CMPXCHG_R32].descr, 7));

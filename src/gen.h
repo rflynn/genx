@@ -45,7 +45,6 @@ u32  gen_compile(genotype *g, u8 *buf);
 
 void pop_gen(struct pop *p,
              u32 keep,
-             const double cross_rate,
              const double mutate_rate);
 
 void pop_score(struct pop *p);
