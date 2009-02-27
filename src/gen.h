@@ -14,7 +14,7 @@
 #include "typ.h"
 
 #define POP_SIZE        64 * 1024 /* total genotypes in a population generation */
-#define CHROMO_MAX      64        /* maximum chromosomes in a genotype */
+#define CHROMO_MAX      72        /* maximum chromosomes in a genotype */
 #define MAX_INT_CONST   0xFFFF    /* maximum possible random integer value */
 #define MAX_FLT_CONST   10.f      /* max random floating point val */
 #define MIN_FLT_CONST  -10.f      /* min random floating point val */
@@ -120,8 +120,11 @@ struct genx_iface_u32 {
 	int (*done)();
 	struct {
 		unsigned   len;
-		u32      (*in_out)[2];
-	} target;
+    struct {
+      u32   (*in)[3],
+            out;
+    } *data;
+	} test;
 	struct {
 		u32      param_cnt;     /*
 		                         * number of parameters

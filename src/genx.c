@@ -7,7 +7,6 @@
  *   <URL: http://www.opensource.org/licenses/mit-license.php>
  */
 
-
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -81,26 +80,6 @@ static float magic(float x[])
 }
 #endif
 
-#if 0
-static s32 magic(s32 x[])
-{
-  /*
-   * we'll try to find a bitwise solution
-   * for calculating 1.f/sqrtf(x)
-   * in order to try to beat the quake3
-   * InvSqrt hack
-   *
-   * floating point on x86 is inherently slow
-   * due to longer cycles per operation and the
-   * requirement of all float loads be from memory
-   */
-  float  a = *(float *)x;   /* type-pun int->float */
-  float  b = 1.f/sqrtf(a);  /* calculate true value */
-  s32    c = *(s32 *)&b;    /* type-pun back */
-  return c;
-}
-#endif
-
 #ifdef X86_USE_INT
 /* test multi-parameter */
 static s32 magic(s32 x[])
@@ -142,6 +121,20 @@ GENERATION      53    3538944 genotypes (321722.2/sec) @Wed Feb 18 02:08:06 2009
   
 #if 0 /* not found: */
   return 0x55555555 | x[0]; // not found yet
+  /*
+   * we'll try to find a bitwise solution
+   * for calculating 1.f/sqrtf(x)
+   * in order to try to beat the quake3
+   * InvSqrt hack
+   *
+   * floating point on x86 is inherently slow
+   * due to longer cycles per operation and the
+   * requirement of all float loads be from memory
+   */
+  float  a = *(float *)x;   /* type-pun int->float */
+  float  b = 1.f/sqrtf(a);  /* calculate true value */
+  s32    c = *(s32 *)&b;    /* type-pun back */
+  return c;
 #endif
 }
 
@@ -174,7 +167,7 @@ struct target Target[] = {
   {{ 0x7fffffff, 0, 0 }, 0 },
   {{ 0x30305123, 0, 0 }, 0 },
   {{ 0x12345678, 0, 0 }, 0 },
-  {{    0xaaaaa, 0, 0 }, 0 },
+  {{  0xeeeeeee, 0, 0 }, 0 },
   {{    0xaaaaa, 0, 0 }, 0 },
   {{    0x55555, 0, 0 }, 0 },
   {{    0x44444, 0, 0 }, 0 },
@@ -213,6 +206,15 @@ static void calc_target(void)
 
 int Dump = 0; /* verbosity level */
 
+static u8 *x86;
+static u32 x86len;
+
+static void genoscore_exec(genoscore *g)
+{
+  x86len = gen_compile(&g->geno, x86);
+  assert(score(x86, 1) == GENOSCORE_SCORE(g));
+}
+
 int main(int argc, char *argv[])
 {
   static struct pop Pop;
@@ -224,7 +226,7 @@ int main(int argc, char *argv[])
   u64          indivs         = 0;    /* total creatures created; status */
   u32          generation     = 0,    /* track time; status */
                gen_since_best = 0;    /* dead end counter */
-  u8 *x86 = malloc(1024);
+  x86 = malloc(1024);
   printf("x86=%p\n", (void *)x86);
   assert(NULL != x86);
   /* show sizes of our core types in bytes */
@@ -277,13 +279,11 @@ int main(int argc, char *argv[])
         generation, indivs, (double)indivs / (t - Start + 1), ctime_r(&t, tbuf));
       if (progress) {
         /* only display best if it's changed; raises signal/noise ration */
-        memcpy(&CurrBest, Pop.indiv, sizeof Pop.indiv[0]);
+        CurrBest = Pop.indiv[0];
         gen_dump(&CurrBest.geno, stdout);
-        printf("->score=%" PRIt "\n",
-          GENOSCORE_SCORE(&Pop.indiv[0]));
+        printf("->score=%" PRIt "\n", GENOSCORE_SCORE(&Pop.indiv[0]));
         /* show detailed score from best candidate */
-        (void)gen_compile(&CurrBest.geno, x86);
-        (void)score(x86, 1);
+        genoscore_exec(&CurrBest);
         gen_since_best = 0;
       }
     }
@@ -294,8 +294,7 @@ int main(int argc, char *argv[])
        * throw out our top genetic material and start fresh, but still
        * retain CurrBest, against which all new candidates are judged */
       gen_dump(&CurrBest.geno, stdout);
-      (void)gen_compile(&CurrBest.geno, x86);
-      (void)score(x86, 1);
+      genoscore_exec(&CurrBest);
       printf("No progress for %u generations, trying something new...\n", GEN_DEADEND);
       pop_gen(&Pop, 0, Mutate_Rate); /* start over! */
       gen_since_best = 0;
@@ -307,8 +306,7 @@ int main(int argc, char *argv[])
     || CurrBest.geno.len > GEN_PREFIX_LEN + 1 + GEN_SUFFIX_LEN /* shortest possible solution (excluding identity) */
   );
   printf("done.\n");
-  (void)gen_compile(&CurrBest.geno, x86);
-  (void)score(x86, 1);
+  genoscore_exec(&CurrBest);
   return 0;
 }
 

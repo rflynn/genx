@@ -10,21 +10,27 @@ git clone git://github.com/pizza/genx.git ~/genx && cd ~/genx/src && make && ./g
   O    
  o=O   Why is this interesting?
 0===0  
-0===0  o Discover Unknown/Unexpected Relationships
- O=o     Given existing raw input and output data, genx can search for the
-  O      simplest relationship between them.
+0===0  - Discover Unknown/Unexpected Relationships
+ O=o     Given input and output data, genx can search for the simplest
+  O      relationship between them.
  o=O   
-0===0  o Automated Optimization
+0===0  - Automated Optimization
 0===0    Given input and an existing function, genx can try to find simpler,
  O=o     more efficient equivalences.
   O    
- o=O   o It's Fast
+ o=O   - It's Fast
 0===0    Because the functions are expressed in native x86 they can be
 0===0    executed by the CPU directly, allowing even my modest old laptop to
  O=o     process millions of candidates per minute. 
   O    
- o=O   More Info
-0===0  INSTALL.txt <- Figure out how to use it  
-0===0     TODO.txt <- Help out
- O=o   LICENSE.txt <- Concerning distribution
-  O   
+ o=O   Requirements
+0===0     x86 processor, make, gcc
+0===0  
+ O=o   Build
+  O      make
+ o=O   
+0===0  Run 
+0===0    cd src && ./genx
+ O=o   
+  O    Enjoy
+ o=O   

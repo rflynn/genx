@@ -234,12 +234,63 @@ inline static u32 chromo_add(const struct op *op, u8 *buf, u32 len)
   return len;
 }
 
+/**
+ * calculate the total size of the chromosome in bytes
+ */
+static u32 chromo_bytes(const struct op *op)
+{
+  const struct x86 *x = X86 + op->x86;
+  u32 len = 0;
+  len += x->oplen;
+  len += x->modrmlen;
+  len += x->immlen;
+  return len;
+}
+
+/**
+ * given an offset, find the closest beginning of a
+ * chromosome that we can jump to; we don't want to land in the middle!
+ * @param off the total offset of the jump
+ * @param rel the relative offset of the jump
+ * @param idx the position of the jump within g->indiv, can't jump back!
+ */
+static s32 gen_jmp_pos(const genotype *g, const u32 off, u32 rel, u32 idx)
+{
+  u32 total = 0,
+      i;
+  s32 res;
+  assert(idx < g->len);
+  if (idx == g->len - 1)
+    return 0;
+  rel = idx + 1 + (rel % (g->len - idx - 2));
+  for (i = 0; i < rel; i++)
+    total += chromo_bytes(g->chromo + i);
+  res = (s32)(total - off); /* calculate byte offset */
+  if (res < 0) /* can't go back, no matter what */
+    res = 0;
+
+#if 0
+  printf("%hd ", res);
+  fflush(stdout);
+#endif
+  assert(res >= 0);
+
+  return res;
+}
+
 u32 gen_compile(genotype *g, u8 *buf)
 {
   u32 i,
       len = 0;
-  for (i = 0; i < g->len; i++)
+  for (i = 0; i < g->len; i++) {
+    if (X86[g->chromo[i].x86].jcc) {
+      /* if relative jump, adjust the random jump destination to a valid offset */
+      *(s32*)&g->chromo[i].data =
+        gen_jmp_pos(g, len + chromo_bytes(g->chromo + i),
+          (u32)g->chromo[i].data, i);
+    }
     len = chromo_add(g->chromo + i, buf, len);
+  }
   return len;
 }
 

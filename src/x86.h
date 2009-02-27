@@ -91,6 +91,7 @@ struct x86 {
            modrmlen,
            modrm,     /* /n digit for some operations       */
            immlen;    /* number of variable bytes           */
+  u8        jcc;      /* is it a conditional jump instr?    */
   enum iset set;
   enum iflt flt;
   enum ialg alg;
@@ -126,8 +127,53 @@ enum {
    * for use in function body
    */
 
+# define X86_FIRST JA_32
+
+  JA_32,
+  JAE_32,
+  JB_32,
+  JBE_32,
+#if 0
+  JC_32,
+#endif
+  JE_32,
+  JG_32,
+  JGE_32,
+  JL_32,
+
+  JLE_32,
+#if 0
+  JNA_32,
+  JNAE_32,
+  JNB_32,
+  JNBE_32,
+  JNC_32,
+#endif
+  JNE_32,
+#if 0
+  JNG_32,
+  JNGE_32,
+  JNL_32,
+  JNLE_32,
+#endif
+  JNO_32,
+  JNP_32,
+  JNS_32,
+#if 0
+  JNZ_32,
+#endif
+  JO_32,
+  JP_32,
+#if 0
+  JPE_32,
+  JPO_32,
+#endif
+  JS_32,
+#if 0
+  JZ_32,
+#endif
+
 #ifdef X86_USE_INT
-# define X86_FIRST ADD_IMM8
   ADD_IMM8,
   ADD_R32,
   IMUL_IMM,
@@ -254,8 +300,6 @@ enum {
   POPCNT,
   BSWAP_EDX,
   IDIV_R32,
-  JE,
-  JNZ
 #endif
 
   X86_COUNT /* last, special */
