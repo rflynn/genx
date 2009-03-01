@@ -19,6 +19,7 @@
 extern int Dump;
 extern struct target Target[];
 extern u32 TargetLen;
+extern s32 TargetSum;
 
 #ifdef X86_USE_FLOAT
 
@@ -155,8 +156,11 @@ u32 score(const void *f, int verbose)
         Target[i].in[0], Target[i].in[1], Target[i].in[2],
         Target[i].out, sc, diff, scor);
   }
-  if (verbose || Dump >= 2)
-    printf("score=%u\n", scor);
+  if (verbose || Dump >= 2) {
+    printf("score=%" PRIu32 "/%" PRIu32 " (%.7f%%)\n",
+      scor, TargetSum,
+      ((double)scor / (double)TargetSum) * 100.);
+  }
   return scor;
 }
 

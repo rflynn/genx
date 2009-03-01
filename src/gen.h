@@ -116,16 +116,22 @@ int genoscore_lencmp(const void *, const void *);
  * open question, as is how we will be describe and generate
  * functions for operating on structures in memory.
  */
-struct genx_iface_u32 {
-	u32 (*func)(u32);
-	int (*done)();
-	struct {
-		unsigned   len;
+struct genx_iface {
+  union {
     struct {
-      u32   (*in)[3],
-            out;
-    } *data;
+	    u32 (*func)(u32);
+      u32 (*score)(u32 *cnt);
+	    int (*done)(const genoscore *);
+	    struct {
+		    const unsigned len;
+        const struct {
+          u32   (*in)[4],
+                out;
+        } *list;
+      } data;
+    } i;
 	} test;
+
 	struct {
 		u32      param_cnt;     /*
 		                         * number of parameters

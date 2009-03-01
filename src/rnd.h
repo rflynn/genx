@@ -13,6 +13,10 @@
 #include <stdlib.h>
 #include "typ.h"
 
+#ifdef WIN32
+float drand48(void);
+#endif
+
 void rnd32_init(u32);
 #if 1
 u32  rnd32(void);

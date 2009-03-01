@@ -13,6 +13,13 @@
 #include <stdlib.h>
 #include "rnd.h"
 
+#ifdef WIN32
+float drand48(void)
+{
+  return (double)rnd32() / ((double)0xFFFFFFFF + 1.);
+}
+#endif
+
 #if 0
 /*
  * just wrap built-ins srandom()/random()

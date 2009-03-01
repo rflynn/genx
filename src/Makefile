@@ -10,11 +10,11 @@ BIN = genx
 ALL = genx
 OBJ = rnd.o x86.o gen.o run.o genx.o
 
-debug:
-	$(MAKE) "CFLAGS=$(CFLAGS) -O0" int
-
 fast:
 	$(MAKE) "CFLAGS=$(CFLAGS) -Os" int
+
+debug:
+	$(MAKE) "CFLAGS=$(CFLAGS) -O0" int
 
 int:
 	$(MAKE) "CFLAGS=$(CFLAGS) -DX86_USE_INT" genx

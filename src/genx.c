@@ -163,7 +163,7 @@ struct target Target[] = {
 #else
   /* a range of integer data with which to play */
   //{{         -1, 0, 0 }, 0 },
-  {{ 0xffffffff, 0, 0 }, 0 },
+  //{{ 0xffffffff, 0, 0 }, 0 },
   {{ 0x7fffffff, 0, 0 }, 0 },
   {{ 0x30305123, 0, 0 }, 0 },
   {{ 0x12345678, 0, 0 }, 0 },
@@ -188,6 +188,7 @@ struct target Target[] = {
 #endif
 };
 u32 TargetLen = sizeof Target  / sizeof Target[0];
+s32 TargetSum = 0;
 
 /********************* END INPUT PART *****************************/
 
@@ -198,9 +199,11 @@ static void calc_target(void)
   printf("TargetLen <- %u\n", TargetLen);
   for (i = 0; i < TargetLen; i++) {
     Target[i].out = magic(Target[i].in);
+    TargetSum += Target[i].out;
     printf("Target %3u (%11" PRIt ",%11" PRIt ",%11" PRIt ") -> %11" PRIt "\n",
       i, Target[i].in[0], Target[i].in[1], Target[i].in[2], Target[i].out);
   }
+  TargetSum = abs(TargetSum);
 }
 #endif
 
