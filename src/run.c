@@ -69,11 +69,17 @@ float score(const void *f, int verbose)
 {
   float scor = 0.f;
   u32 i;
-  if (verbose || Dump >= 2)
-    printf("%11s %11s %11s %11s %11s %11s %11s\n"
+  if (verbose || Dump >= 2) {
+    printf("%-35s %-23s %-23s\n"
+           "----------------------------------- "
+           "----------------------- "
+           "-----------------------\n"
+           "%11s %11s %11s %11s %11s %11s %11s\n"
            "----------- ----------- ----------- "
            "----------- ----------- ----------- -----------\n",
-           "a", "b", "c", "expected", "actual", "diff", "diffsum");
+           "Input", "Output", "Difference",
+           "a", "b", "c", "expected", "actual", "diff", "sum(diff)");
+  }
   for (i = 0; i < TargetLen; i++) {
     float diff,   /* difference between target and sc */
           sc;
@@ -104,7 +110,7 @@ float score(const void *f, int verbose)
 
 #else /* integer */
 
-static u32 shim_i(const void *, u32, u32, u32);
+static inline u32 shim_i(const void *, u32, u32, u32);
 
 /**
  * given a candidate function, test it against all input and return a
@@ -113,16 +119,35 @@ static u32 shim_i(const void *, u32, u32, u32);
  */
 u32 score(const void *f, int verbose)
 {
-  u32 scor = 0;
-  u32 i;
-  if (verbose || Dump >= 2)
-    printf("%11s %11s %11s %11s %11s %11s %11s\n"
+  volatile u32 scor = 0, i;
+  if (verbose || Dump >= 2) {
+    printf("%-35s %-23s %-23s\n"
+           "----------------------------------- "
+           "----------------------- "
+           "-----------------------\n"
+           "%11s %11s %11s %11s %11s %11s %11s\n"
            "----------- ----------- ----------- "
            "----------- ----------- ----------- -----------\n",
-           "a", "b", "c", "expected", "actual", "diff", "diffsum");
+           "Input", "Output", "Difference",
+           "a", "b", "c", "expected", "actual", "diff", "sum(diff)");
+  }
   for (i = 0; i < TargetLen; i++) {
-    u32 sc   = shim_i(f, Target[i].in[0], Target[i].in[1], Target[i].in[2]),
-        diff = popcnt(sc ^ Target[i].out);
+    volatile u32 sc   = shim_i(f, Target[i].in[0], Target[i].in[1], Target[i].in[2]);
+#if 0
+    /*
+     * bitwise distance, useful for, well, bitwise functions
+     */
+    u32 diff = popcnt(sc ^ Target[i].out);
+#else
+    /*
+     * arithmetic distance, useful for arithmetic functions
+     */
+    u32 diff = (u32)abs((s32)Target[i].out - (s32)sc);
+    if (0xFFFFFFFFU - diff < scor) {
+      scor = 0xFFFFFFFFU;
+      break;
+    }
+#endif
     scor += diff;
     if (verbose || Dump >= 2)
       printf(" 0x%08" PRIx32 "  0x%08" PRIx32 "  0x%08" PRIx32
@@ -138,9 +163,9 @@ u32 score(const void *f, int verbose)
 /**
  * execute f(in); ensure no collateral damage
  */
-static u32 shim_i(const void *f, u32 x, u32 y, u32 z)
+static inline u32 shim_i(const void *f, u32 x, u32 y, u32 z)
 {
-  u32 out;
+  volatile u32 out;
   __asm__ volatile(
     /*
      * zero all registers to ensure candidate

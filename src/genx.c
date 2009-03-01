@@ -7,7 +7,6 @@
  *   <URL: http://www.opensource.org/licenses/mit-license.php>
  */
 
-
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -45,7 +44,7 @@
                               *
                               */
 
-#define POP_KEEP        2    /* keep this many from generation to generation */
+#define POP_KEEP        1    /* keep this many from generation to generation */
 
 extern const struct x86 X86[X86_COUNT];
 
@@ -78,26 +77,6 @@ static float magic(float x[])
   x[0] = *(float*)&i;                 /* convert bits back to float */
   x[0] = x[0]*(1.5f-xhalf*x[0]*x[0]); /* Newton step, repeating increases accuracy */
   return x[0];
-}
-#endif
-
-#if 0
-static s32 magic(s32 x[])
-{
-  /*
-   * we'll try to find a bitwise solution
-   * for calculating 1.f/sqrtf(x)
-   * in order to try to beat the quake3
-   * InvSqrt hack
-   *
-   * floating point on x86 is inherently slow
-   * due to longer cycles per operation and the
-   * requirement of all float loads be from memory
-   */
-  float  a = *(float *)x;   /* type-pun int->float */
-  float  b = 1.f/sqrtf(a);  /* calculate true value */
-  s32    c = *(s32 *)&b;    /* type-pun back */
-  return c;
 }
 #endif
 
@@ -142,6 +121,20 @@ GENERATION      53    3538944 genotypes (321722.2/sec) @Wed Feb 18 02:08:06 2009
   
 #if 0 /* not found: */
   return 0x55555555 | x[0]; // not found yet
+  /*
+   * we'll try to find a bitwise solution
+   * for calculating 1.f/sqrtf(x)
+   * in order to try to beat the quake3
+   * InvSqrt hack
+   *
+   * floating point on x86 is inherently slow
+   * due to longer cycles per operation and the
+   * requirement of all float loads be from memory
+   */
+  float  a = *(float *)x;   /* type-pun int->float */
+  float  b = 1.f/sqrtf(a);  /* calculate true value */
+  s32    c = *(s32 *)&b;    /* type-pun back */
+  return c;
 #endif
 }
 
@@ -169,12 +162,12 @@ struct target Target[] = {
   {{ 401423.f,  277.1f, 0.f }, -1.09f },
 #else
   /* a range of integer data with which to play */
-  {{         -1, 0, 0 }, 0 },
+  //{{         -1, 0, 0 }, 0 },
   {{ 0xffffffff, 0, 0 }, 0 },
   {{ 0x7fffffff, 0, 0 }, 0 },
   {{ 0x30305123, 0, 0 }, 0 },
   {{ 0x12345678, 0, 0 }, 0 },
-  {{    0xaaaaa, 0, 0 }, 0 },
+  {{  0xeeeeeee, 0, 0 }, 0 },
   {{    0xaaaaa, 0, 0 }, 0 },
   {{    0x55555, 0, 0 }, 0 },
   {{    0x44444, 0, 0 }, 0 },
@@ -213,6 +206,19 @@ static void calc_target(void)
 
 int Dump = 0; /* verbosity level */
 
+static u8 *x86;
+static u32 x86len;
+
+static void genoscore_exec(genoscore *g)
+{
+  if (0 == g->geno.len) {
+    printf("genoscore empty, you suck\n");
+  } else {
+    x86len = gen_compile(&g->geno, x86);
+    assert(score(x86, 1) == GENOSCORE_SCORE(g));
+  }
+}
+
 int main(int argc, char *argv[])
 {
   static struct pop Pop;
@@ -224,7 +230,7 @@ int main(int argc, char *argv[])
   u64          indivs         = 0;    /* total creatures created; status */
   u32          generation     = 0,    /* track time; status */
                gen_since_best = 0;    /* dead end counter */
-  u8 *x86 = malloc(1024);
+  x86 = malloc(1024);
   printf("x86=%p\n", (void *)x86);
   assert(NULL != x86);
   /* show sizes of our core types in bytes */
@@ -255,7 +261,9 @@ int main(int argc, char *argv[])
   randr_test();
 
   memset(&Pop, 0, sizeof Pop);
+#ifndef WIN32
   nice(+19); /* be as polite to any other programs as possible */
+#endif
   Start = time(NULL);
   printf("Start=%lu\n", (unsigned long)Start);
 
@@ -271,19 +279,16 @@ int main(int argc, char *argv[])
     progress = -1 == genoscore_lencmp(&Pop.indiv[0], &CurrBest);
     if (progress || 0 == generation % 100) {
       /* display generation regularly or on progress */
-      char tbuf[32];
       time_t t = time(NULL);
       printf("GENERATION %7" PRIu32 " %10" PRIu64 " genotypes (%.1f/sec) @%s",
-        generation, indivs, (double)indivs / (t - Start + 1), ctime_r(&t, tbuf));
+        generation, indivs, (double)indivs / (t - Start + 0.0001), ctime(&t));
       if (progress) {
         /* only display best if it's changed; raises signal/noise ration */
-        memcpy(&CurrBest, Pop.indiv, sizeof Pop.indiv[0]);
+        CurrBest = Pop.indiv[0];
         gen_dump(&CurrBest.geno, stdout);
-        printf("->score=%" PRIt "\n",
-          GENOSCORE_SCORE(&Pop.indiv[0]));
+        printf("->score=%" PRIt "\n", GENOSCORE_SCORE(&Pop.indiv[0]));
         /* show detailed score from best candidate */
-        (void)gen_compile(&CurrBest.geno, x86);
-        (void)score(x86, 1);
+        genoscore_exec(&CurrBest);
         gen_since_best = 0;
       }
     }
@@ -294,8 +299,7 @@ int main(int argc, char *argv[])
        * throw out our top genetic material and start fresh, but still
        * retain CurrBest, against which all new candidates are judged */
       gen_dump(&CurrBest.geno, stdout);
-      (void)gen_compile(&CurrBest.geno, x86);
-      (void)score(x86, 1);
+      genoscore_exec(&CurrBest);
       printf("No progress for %u generations, trying something new...\n", GEN_DEADEND);
       pop_gen(&Pop, 0, Mutate_Rate); /* start over! */
       gen_since_best = 0;
@@ -307,8 +311,7 @@ int main(int argc, char *argv[])
     || CurrBest.geno.len > GEN_PREFIX_LEN + 1 + GEN_SUFFIX_LEN /* shortest possible solution (excluding identity) */
   );
   printf("done.\n");
-  (void)gen_compile(&CurrBest.geno, x86);
-  (void)score(x86, 1);
+  genoscore_exec(&CurrBest);
   return 0;
 }
 

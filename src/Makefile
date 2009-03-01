@@ -2,17 +2,19 @@
 # $Id$
 #
 
-CFLAGS = -W -Wall -Wshadow -pedantic -std=gnu99 -m32
+# -fprofile-arcs -ftest-coverage
+
+CFLAGS = -W -Wall -Wshadow -pedantic -std=gnu99 -g -m32
 LDFLAGS = -lm -m32
 BIN = genx
 ALL = genx
 OBJ = rnd.o x86.o gen.o run.o genx.o
 
 debug:
-	$(MAKE) "CFLAGS=$(CFLAGS) -O0 -ggdb" int
+	$(MAKE) "CFLAGS=$(CFLAGS) -O0" int
 
 fast:
-	$(MAKE) "CFLAGS=$(CFLAGS) -Os -ggdb" int
+	$(MAKE) "CFLAGS=$(CFLAGS) -Os" int
 
 int:
 	$(MAKE) "CFLAGS=$(CFLAGS) -DX86_USE_INT" genx
@@ -30,5 +32,5 @@ run.o: run.h run.c typ.h
 genx.o: rnd.o x86.o gen.o
 
 clean:
-	$(RM) $(ALL) $(OBJ) cscope.out
+	$(RM) $(ALL) $(OBJ) cscope.out *.{gcov,gcda,gcno}
 

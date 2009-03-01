@@ -4,19 +4,13 @@
 TODO
 -----------------------------------------------------------------------------
 
- * redefine CHROMO_MAX to not include the GEN_PREFIX_LEN and GEN_SUFFIX_LEN,
-   as this relationship is not readily apparent, and changes depending on
-   INT/FLOAT and on architecture.
 
-   specifying CHROMO_MAX should relate only to the core operations of the
-   function, not the architectural overhead.
+ * fix score() bug!!!!
 
- * fix optimization bugs
-  
-   when compiled with -O0 the scoring works fine, but when compiled with
-   -O[s123] the code either malfunctions (-Os) or segfaults (everything else).
+   the results of score() diff depending on who runs it(!)
 
-   on my workstation -O0 code appears to run about 1/3 slower than -Os
+   this occurs sometimes but not always, and is almost certainly the fault
+   of the inline asm in the shim functions.
 
  * add support for the saving/retrieval of jobs, which will allow tasks to be
    resumed if the program crashes, and would even allow the transfer of jobs
@@ -36,7 +30,7 @@ TODO
         this shouldn't be too hard, too CPU-intensive or too complex, but
         it will get people more excited about using it.
 
- * implement proper branching/looping.
+ * implement proper looping.
   
    so far the only sort of branching we have are conditional moves
    (CMOV* instructions); which provide little variability.
