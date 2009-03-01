@@ -44,7 +44,7 @@
                               *
                               */
 
-#define POP_KEEP        2    /* keep this many from generation to generation */
+#define POP_KEEP        1    /* keep this many from generation to generation */
 
 extern const struct x86 X86[X86_COUNT];
 
@@ -162,7 +162,7 @@ struct target Target[] = {
   {{ 401423.f,  277.1f, 0.f }, -1.09f },
 #else
   /* a range of integer data with which to play */
-  {{         -1, 0, 0 }, 0 },
+  //{{         -1, 0, 0 }, 0 },
   {{ 0xffffffff, 0, 0 }, 0 },
   {{ 0x7fffffff, 0, 0 }, 0 },
   {{ 0x30305123, 0, 0 }, 0 },
@@ -211,8 +211,12 @@ static u32 x86len;
 
 static void genoscore_exec(genoscore *g)
 {
-  x86len = gen_compile(&g->geno, x86);
-  assert(score(x86, 1) == GENOSCORE_SCORE(g));
+  if (0 == g->geno.len) {
+    printf("genoscore empty, you suck\n");
+  } else {
+    x86len = gen_compile(&g->geno, x86);
+    assert(score(x86, 1) == GENOSCORE_SCORE(g));
+  }
 }
 
 int main(int argc, char *argv[])
@@ -257,7 +261,9 @@ int main(int argc, char *argv[])
   randr_test();
 
   memset(&Pop, 0, sizeof Pop);
+#ifndef WIN32
   nice(+19); /* be as polite to any other programs as possible */
+#endif
   Start = time(NULL);
   printf("Start=%lu\n", (unsigned long)Start);
 
@@ -273,10 +279,9 @@ int main(int argc, char *argv[])
     progress = -1 == genoscore_lencmp(&Pop.indiv[0], &CurrBest);
     if (progress || 0 == generation % 100) {
       /* display generation regularly or on progress */
-      char tbuf[32];
       time_t t = time(NULL);
       printf("GENERATION %7" PRIu32 " %10" PRIu64 " genotypes (%.1f/sec) @%s",
-        generation, indivs, (double)indivs / (t - Start + 1), ctime_r(&t, tbuf));
+        generation, indivs, (double)indivs / (t - Start + 0.0001), ctime(&t));
       if (progress) {
         /* only display best if it's changed; raises signal/noise ration */
         CurrBest = Pop.indiv[0];

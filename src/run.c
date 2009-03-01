@@ -69,11 +69,17 @@ float score(const void *f, int verbose)
 {
   float scor = 0.f;
   u32 i;
-  if (verbose || Dump >= 2)
-    printf("%11s %11s %11s %11s %11s %11s %11s\n"
+  if (verbose || Dump >= 2) {
+    printf("%-35s %-23s %-23s\n"
+           "----------------------------------- "
+           "----------------------- "
+           "-----------------------\n"
+           "%11s %11s %11s %11s %11s %11s %11s\n"
            "----------- ----------- ----------- "
            "----------- ----------- ----------- -----------\n",
-           "a", "b", "c", "expected", "actual", "diff", "diffsum");
+           "Input", "Output", "Difference",
+           "a", "b", "c", "expected", "actual", "diff", "sum(diff)");
+  }
   for (i = 0; i < TargetLen; i++) {
     float diff,   /* difference between target and sc */
           sc;
@@ -113,14 +119,20 @@ static inline u32 shim_i(const void *, u32, u32, u32);
  */
 u32 score(const void *f, int verbose)
 {
-  u32 scor = 0, i;
-  if (verbose || Dump >= 2)
-    printf("%11s %11s %11s %11s %11s %11s %11s\n"
+  volatile u32 scor = 0, i;
+  if (verbose || Dump >= 2) {
+    printf("%-35s %-23s %-23s\n"
+           "----------------------------------- "
+           "----------------------- "
+           "-----------------------\n"
+           "%11s %11s %11s %11s %11s %11s %11s\n"
            "----------- ----------- ----------- "
            "----------- ----------- ----------- -----------\n",
-           "a", "b", "c", "expected", "actual", "diff", "diffsum");
+           "Input", "Output", "Difference",
+           "a", "b", "c", "expected", "actual", "diff", "sum(diff)");
+  }
   for (i = 0; i < TargetLen; i++) {
-    u32 sc   = shim_i(f, Target[i].in[0], Target[i].in[1], Target[i].in[2]);
+    volatile u32 sc   = shim_i(f, Target[i].in[0], Target[i].in[1], Target[i].in[2]);
 #if 0
     /*
      * bitwise distance, useful for, well, bitwise functions
@@ -153,7 +165,7 @@ u32 score(const void *f, int verbose)
  */
 static inline u32 shim_i(const void *f, u32 x, u32 y, u32 z)
 {
-  u32 out;
+  volatile u32 out;
   __asm__ volatile(
     /*
      * zero all registers to ensure candidate
