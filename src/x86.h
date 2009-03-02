@@ -127,6 +127,7 @@ enum {
    * for use in function body
    */
 
+# define X86_FIRST JA_32 //ADD_IMM8
   JA_32,
   JAE_32,
   JB_32,
@@ -173,7 +174,6 @@ enum {
 
 
 #ifdef X86_USE_INT
-# define X86_FIRST ADD_IMM8
   ADD_IMM8,
   ADD_R32,
   IMUL_IMM,

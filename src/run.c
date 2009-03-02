@@ -157,9 +157,9 @@ u32 score(const void *f, int verbose)
         Target[i].out, sc, diff, scor);
   }
   if (verbose || Dump >= 2) {
-    printf("score=%" PRIu32 "/%" PRIu32 " (%.7f%%)\n",
+    printf("score=%" PRIu32 "/%" PRIu32 " (%.6f%%)\n",
       scor, TargetSum,
-      ((double)scor / (double)TargetSum) * 100.);
+      100. - (((double)scor / (double)TargetSum) * 100.));
   }
   return scor;
 }
