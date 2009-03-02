@@ -27,6 +27,7 @@ extern s32 TargetSum;
  * given a candidate function and an input, pass input as a parameter
  * and execute 'f'
  */
+static float shim_f(const void *f, float a, float b, float c) NOINLINE;
 static float shim_f(const void *f, float a, float b, float c)
 {
   float out;
@@ -111,7 +112,7 @@ float score(const void *f, int verbose)
 
 #else /* integer */
 
-static inline u32 shim_i(const void *, u32, u32, u32);
+static u32 shim_i(const void *f, u32 x, u32 y, u32 z) NOINLINE;
 
 /**
  * given a candidate function, test it against all input and return a
@@ -167,7 +168,7 @@ u32 score(const void *f, int verbose)
 /**
  * execute f(in); ensure no collateral damage
  */
-static inline u32 shim_i(const void *f, u32 x, u32 y, u32 z)
+static u32 shim_i(const void *f, u32 x, u32 y, u32 z)
 {
   volatile u32 out;
   __asm__ volatile(

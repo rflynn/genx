@@ -10,6 +10,12 @@
 #ifndef TYP_H
 #define TYP_H
 
+#ifdef __GNUC__
+# define NOINLINE __attribute__((noinline))
+#else
+# define NOINLINE
+#endif
+
 #ifdef WIN32
 typedef unsigned char     u8;
 typedef   signed char     s8;
