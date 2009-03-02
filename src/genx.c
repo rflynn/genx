@@ -23,62 +23,11 @@
 #include "gen.h"
 #include "run.h"
 
-#define GEN_DEADEND 10000    /* start over after this many generations of no progress */
-                             /*
-                              * FIXME: this is the right idea, but a bad implementation
-                              * of it. for any given solution, there will be some
-                              * minimum solution that a single mutation is extremely
-                              * likely to improve.
-                              *
-                              * after a certain period of non-progress we should be
-                              * able to store/push a current solution and start over
-                              * again fresh.
-                              *
-                              * the reason this won't work now is because we always
-                              * keep that solution in CurrBest and compare everything
-                              * to it; which prevents us from re-growing a new one,
-                              * since starting from scratch means even the best
-                              * solution will not be perfect from the start (and
-                              * which will be discarded in favor of the longer but
-                              * technically better solutions)
-                              *
-                              */
-
 #define POP_KEEP        1    /* keep this many from generation to generation */
 
 extern const struct x86 X86[X86_COUNT];
 
 /******************* BEGIN INPUT PART *****************************/
-
-#if 0
-/*
- * the function for which we try to find an equivalence.
- * if you don't *know* what the function is, then just populate
- * Target instead
- */
-static float magic(float x[])
-{
-
-  //return x[0] * 0.5f;
-  //return 1.5;
-  //return sin(x[0]);   // FSIN
-  //return M_PI;     // FLDPI
-  //return floor(x[0]); // FLD
-  //return ceil(x[0]);
-  //return fmod(x[0], 5.f);
-  //return x[0] - 1;
-  //return x[0] * 100.f;
-
-  /* infamous Quake 3 inv sqrt */
-  float magic = 0x5f3759df;
-  float xhalf = 0.5f * x[0];
-  int i = *(int*)x;                   /* get bits for floating value */
-  i = magic - (i>>1);                 /* gives initial guess y0 */
-  x[0] = *(float*)&i;                 /* convert bits back to float */
-  x[0] = x[0]*(1.5f-xhalf*x[0]*x[0]); /* Newton step, repeating increases accuracy */
-  return x[0];
-}
-#endif
 
 #ifdef X86_USE_INT
 /* test multi-parameter */
@@ -101,43 +50,8 @@ static s32 magic(s32 x[])
                   * EXACTLY one instruction */
 #endif
 
-/* I don't even know why this works, but it is pretty short :/
-GENERATION      53    3538944 genotypes (321722.2/sec) @Wed Feb 18 02:08:06 2009
-  0 c8 00 00 00                     enter
-  1 8b 45 08                        mov     0x8(%ebp), %eax
-  2 8b 5d 0c                        mov     0xc(%ebp), %ebx
-  3 8b 4d 10                        mov     0x10(%ebp), %ecx
-  4 c1 d8 22                        rol     0x22, %ebx, %eax
-  5 c1 e8 1f                        shr     0x1f, %eax
-  6 0f ba f8 4e                     btc     0x4e, %eax
-  7 81 f0 ff bf 00 00               xor     0x0000bfff, %eax
-  8 c9                              leave
-  9 c3                              ret
-->score=0
-  return 0xffff ^ (x[0] & 1);
-*/
-
   return (s32)sqrt(x[0]);
-  
-#if 0 /* not found: */
-  return 0x55555555 | x[0]; // not found yet
-  /*
-   * we'll try to find a bitwise solution
-   * for calculating 1.f/sqrtf(x)
-   * in order to try to beat the quake3
-   * InvSqrt hack
-   *
-   * floating point on x86 is inherently slow
-   * due to longer cycles per operation and the
-   * requirement of all float loads be from memory
-   */
-  float  a = *(float *)x;   /* type-pun int->float */
-  float  b = 1.f/sqrtf(a);  /* calculate true value */
-  s32    c = *(s32 *)&b;    /* type-pun back */
-  return c;
-#endif
 }
-
 #endif
 
 /*
@@ -165,9 +79,11 @@ struct target Target[] = {
   //{{         -1, 0, 0 }, 0 },
   //{{ 0xffffffff, 0, 0 }, 0 },
   {{ 0x7fffffff, 0, 0 }, 0 },
+  {{ 0x76543210, 0, 0 }, 0 },
   {{ 0x30305123, 0, 0 }, 0 },
   {{ 0x12345678, 0, 0 }, 0 },
   {{  0xeeeeeee, 0, 0 }, 0 },
+  {{   0xcccccc, 0, 0 }, 0 },
   {{    0xaaaaa, 0, 0 }, 0 },
   {{    0x55555, 0, 0 }, 0 },
   {{    0x44444, 0, 0 }, 0 },
@@ -220,6 +136,27 @@ static void genoscore_exec(genoscore *g)
     x86len = gen_compile(&g->geno, x86);
     assert(score(x86, 1) == GENOSCORE_SCORE(g));
   }
+}
+
+static char * commafy(char *dst, size_t dstlen, const char *fmt, const u64 n)
+{
+  char     src[32];
+  size_t   srclen;
+  int      prefix;
+  unsigned off = 0;
+  snprintf(src, sizeof src, fmt, indivs);
+  srclen = strlen(src);
+  prefix = (int)(srclen % 3);
+  if (prefix > 0) {
+    off = snprintf(dst, dstlen, "%.*s,", prefix, src);
+    src += prefix;
+  }
+  while (off+4 < dstlen && *src) {
+    off += snprintf(dst+off, dstlen-off, "%.*s,", 3, src);
+    src += 3;
+  }
+  dst[off - (off > 0)] = '\0';
+  return dst;
 }
 
 int main(int argc, char *argv[])
@@ -282,9 +219,11 @@ int main(int argc, char *argv[])
     progress = -1 == genoscore_lencmp(&Pop.indiv[0], &CurrBest);
     if (progress || 0 == generation % 100) {
       /* display generation regularly or on progress */
+      char commabuf[32];
       time_t t = time(NULL);
-      printf("GENERATION %7" PRIu32 " %10" PRIu64 " genotypes (%.1f/sec) @%s",
-        generation, indivs, (double)indivs / (t - Start + 0.0001), ctime(&t));
+      printf("GENERATION %7" PRIu32 " %13s genotypes (%.1f/sec) @%s",
+        generation, commafy(commabuf, sizeof commabuf, "%" PRIu64, indivs),
+        (double)indivs / (t - Start + 0.0001), ctime(&t));
       if (progress) {
         /* only display best if it's changed; raises signal/noise ration */
         CurrBest = Pop.indiv[0];
@@ -295,18 +234,7 @@ int main(int argc, char *argv[])
         gen_since_best = 0;
       }
     }
-    if (gen_since_best < GEN_DEADEND) {
-      pop_gen(&Pop, POP_KEEP, Mutate_Rate); /* retain best from previous */
-    } else {
-      /* we have run GEN_DEADEND generations and haven't made any progress;
-       * throw out our top genetic material and start fresh, but still
-       * retain CurrBest, against which all new candidates are judged */
-      gen_dump(&CurrBest.geno, stdout);
-      genoscore_exec(&CurrBest);
-      printf("No progress for %u generations, trying something new...\n", GEN_DEADEND);
-      pop_gen(&Pop, 0, Mutate_Rate); /* start over! */
-      gen_since_best = 0;
-    }
+    pop_gen(&Pop, POP_KEEP, Mutate_Rate); /* retain best from previous */
     generation++;
     gen_since_best++;
   } while (
