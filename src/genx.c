@@ -23,6 +23,7 @@
 #include "gen.h"
 #include "run.h"
 
+
 #define GEN_DEADEND 10000    /* start over after this many generations of no progress */
                              /*
                               * FIXME: this is the right idea, but a bad implementation
