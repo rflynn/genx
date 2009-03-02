@@ -50,7 +50,8 @@ static s32 magic(s32 x[])
                   * EXACTLY one instruction */
 #endif
 
-  return (s32)sqrt(x[0]);
+  return ((3*x[0])*(3*x[0]))-(2*x[0])+5;
+
 }
 #endif
 
@@ -140,23 +141,29 @@ static void genoscore_exec(genoscore *g)
 
 static char * commafy(char *dst, size_t dstlen, const char *fmt, const u64 n)
 {
-  char     srcbuf[32],
-          *src = srcbuf;
-  size_t   srclen;
-  int      prefix;
-  unsigned off = 0;
-  snprintf(src, sizeof src, fmt, n);
+  char   srcbuf[32],
+        *src = srcbuf;
+  size_t srclen;
+  snprintf(srcbuf, sizeof srcbuf, fmt, n);
   srclen = strlen(src);
-  prefix = (int)(srclen % 3);
-  if (prefix > 0) {
-    off = snprintf(dst, dstlen, "%.*s,", prefix, src);
-    src += prefix;
+  if (0 == srclen) {
+    dst[0] = '\0';
+  } else {
+    unsigned off = 0;
+    unsigned prefix = srclen % 3;
+    printf("src=(%s) srclen=%u prefix=%u\n", src, srclen, prefix);
+    if (prefix > 0) {
+      snprintf(dst, dstlen, "%.*s,", prefix, src);
+      off += prefix + 1;
+      src += prefix;
+    }
+    while (off+4 < dstlen && *src) {
+      snprintf(dst+off, dstlen-off, "%.*s,", 3, src);
+      off += 4;
+      src += 3;
+    }
+    dst[off - 1] = '\0';
   }
-  while (off+4 < dstlen && *src) {
-    off += snprintf(dst+off, dstlen-off, "%.*s,", 3, src);
-    src += 3;
-  }
-  dst[off - (off > 0)] = '\0';
   return dst;
 }
 
