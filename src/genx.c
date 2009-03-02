@@ -140,11 +140,12 @@ static void genoscore_exec(genoscore *g)
 
 static char * commafy(char *dst, size_t dstlen, const char *fmt, const u64 n)
 {
-  char     src[32];
+  char     srcbuf[32],
+          *src = srcbuf;
   size_t   srclen;
   int      prefix;
   unsigned off = 0;
-  snprintf(src, sizeof src, fmt, indivs);
+  snprintf(src, sizeof src, fmt, n);
   srclen = strlen(src);
   prefix = (int)(srclen % 3);
   if (prefix > 0) {
