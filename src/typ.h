@@ -10,6 +10,9 @@
 #ifndef TYP_H
 #define TYP_H
 
+/*
+ * define fixed-width types
+ */
 #ifdef WIN32
 typedef unsigned char     u8;
 typedef   signed char     s8;
@@ -30,6 +33,20 @@ typedef uint32_t u32;
 typedef uint64_t u64;
 #endif
 
+/*
+ * module symbol export
+ */
+#ifdef WIN32
+# define EXPORT  __declspec(dllexport)
+# define MODULE_EXTENSION ".dll"
+#else
+# define EXPORT
+# define MODULE_EXTENSION ".so"
+#endif
+
+/*
+ *  
+ */
 #ifdef X86_USE_FLOAT
 # define PRIt "g"
 struct target {

@@ -14,11 +14,13 @@
 #include <limits.h>
 #include "typ.h"
 
+#if 0
 #define POP_SIZE        64 * 1024 /* total genotypes in a population generation */
 #define CHROMO_MAX      128       /* maximum chromosomes in a genotype */
 #define MAX_INT_CONST   0xFFFF    /* maximum possible random integer value */
 #define MAX_FLT_CONST   10.f      /* max random floating point val */
 #define MIN_FLT_CONST  -10.f      /* min random floating point val */
+#endif
 
 /*
  * define common op prefix for all functions;
@@ -62,23 +64,25 @@
 #endif
 
 struct genotype {
-  u32 len;
+  u32 size,
+      len;
   struct op {
     u8 x86,     /* index into X86[] */
        modrm,   /* mod/rm byte, if used */
        data[4]; /* random integer data, if used */
-  } chromo[GEN_PREFIX_LEN + CHROMO_MAX + GEN_SUFFIX_LEN];
+  } *chromo;
 };
 typedef struct genotype genotype;
 
 struct pop {
+  u32 len;
   struct genoscore {
     union {
       float f;
       u32   i;
     } score;
     struct genotype geno;
-  } indiv[POP_SIZE];
+  } *indiv;
 };
 typedef struct genoscore genoscore;
 
@@ -105,22 +109,17 @@ int genoscore_lencmp(const void *, const void *);
 
 #define GENOSCORE_MATCH(gs)   (GENOSCORE_SCORE(gs) <= GENOSCORE_MIN)
 
-/*
- * beginnings of eventual interface describing a problem and
- * providing all parameters necessary to begin an attempt to
- * solve it via genetic algorithm;
- * currently much of this is hard-coded or #define'd
- * we will need a good interface and underlying support for most
- * of it before we can lib-ize genx.
- * how to deal with multiple parameters of varying types is an
- * open question, as is how we will be describe and generate
- * functions for operating on structures in memory.
- */
+enum scoretype {
+  SCORE_BIT,
+  SCORE_ALG
+};
+
 struct genx_iface {
   union {
     struct {
-	    u32 (*func)(u32);
-      u32 (*score)(u32 *cnt);
+      enum scoretype score;
+      u32 max_const;
+	    u32 (*func)(const u32 []);
 	    int (*done)(const genoscore *);
 	    struct {
 		    const unsigned len;
@@ -130,80 +129,28 @@ struct genx_iface {
         } *list;
       } data;
     } i;
+    struct {
+      float min_const,
+            max_const;
+    } f;
 	} test;
-
-	struct {
-		u32      param_cnt;     /*
-		                         * number of parameters
-														 */
-		u32      chromo_min,    /*
-		                         * Minimum number of chromosomes (x86 operations)
-														 * to be considered in a solution.
-														 * 
-														 * Default: 8
-														 * Minimum: 1
-														 * Maximum: 64
-														 */
-		         chromo_max,    /*
-		                         * Maximum number of chromosomes (x86 operations)
-														 * to be considered in a solution.
-														 * 
-														 * Default: 32
-														 * Minimum: 1
-														 * Maximum: 128
-														 */
-		         gen_size,			/*
-		                         * How many genotypes do you wish to produce in
-														 * each generation?
-														 *
-														 * Default: 65536
-														 * Minimum: 2
-														 * Maximum: 16777216
-														 */
-		         gen_keep;			/* 
-														 * How many of the top genotypes should be used
-		                         * to create the next generation?
-														 *
-														 * Default: 8
-														 * Minimum: 1
-														 * Maximum: 'gen_size'-1
-														 */
-		u64 		 gen_deadend;   /* 
-		                         * After how many generations do you want to give
-		                         * up on mutating the current "best" and re-
-														 * generate an entire generation from scratch?
-														 *
-														 * Default: 10,000
-														 * Minimum: 2
-														 * Maximum: 0 (never)
-														 */
-		unsigned minimize_len:1,/*
-		                         * Do you consider a genotype with fewer chromosomes
-														 * but equivalent functionality to be a better
-														 * solution? Obviously it is, but do you want to
-														 * spend precious CPU on it?
-														 *
-														 * Since simply finding a good match is much
-														 * more important, and that one can always search
-														 * for more canonical mutations of a solution
-														 * once one has been settled on, the default action
-														 * is to not worry about it.
-														 *
-														 * Default: 0
-														 * Minimum: 0
-														 * Maximum: 1
-														 */
-						 int_ops:1,			/*
-						                 * Do you want to consider
-														 */
-						 float_ops:1,
-						 algebra_ops:1,
-						 bit_ops:1,
-             random_const:1;/*
-                             * Are we allowed to generate random constant values
-                             * or must we stick with only the input given to us?
-                             */
-	} opt;       
+	struct gen_opts {
+		u32      param_cnt,
+		         chromo_min, 
+		         chromo_max,
+		         gen_size,
+		         gen_keep;
+		u64 		 gen_deadend; 
+    double   mutate_rate;
+    struct x86_opts {
+      unsigned
+						  int_ops:1,
+						  float_ops:1,
+						  algebra_ops:1,
+						  bit_ops:1,
+              random_const:1;
+	  } x86;       
+  } opt;
 };
 
 #endif

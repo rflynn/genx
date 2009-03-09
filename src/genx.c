@@ -15,6 +15,8 @@
 #include <float.h>
 #include <time.h>
 #include <math.h>
+#include <errno.h>
+#include <dlfcn.h> /* dlopen */
 #define _XOPEN_SOURCE 500
 #include <stdlib.h>
 #include "typ.h"
@@ -23,123 +25,15 @@
 #include "gen.h"
 #include "run.h"
 
-#define GEN_DEADEND 10000    /* start over after this many generations of no progress */
-                             /*
-                              * FIXME: this is the right idea, but a bad implementation
-                              * of it. for any given solution, there will be some
-                              * minimum solution that a single mutation is extremely
-                              * likely to improve.
-                              *
-                              * after a certain period of non-progress we should be
-                              * able to store/push a current solution and start over
-                              * again fresh.
-                              *
-                              * the reason this won't work now is because we always
-                              * keep that solution in CurrBest and compare everything
-                              * to it; which prevents us from re-growing a new one,
-                              * since starting from scratch means even the best
-                              * solution will not be perfect from the start (and
-                              * which will be discarded in favor of the longer but
-                              * technically better solutions)
-                              *
-                              */
-
+#if 0
 #define POP_KEEP        1    /* keep this many from generation to generation */
+#endif
 
 extern const struct x86 X86[X86_COUNT];
 
 /******************* BEGIN INPUT PART *****************************/
 
 #if 0
-/*
- * the function for which we try to find an equivalence.
- * if you don't *know* what the function is, then just populate
- * Target instead
- */
-static float magic(float x[])
-{
-
-  //return x[0] * 0.5f;
-  //return 1.5;
-  //return sin(x[0]);   // FSIN
-  //return M_PI;     // FLDPI
-  //return floor(x[0]); // FLD
-  //return ceil(x[0]);
-  //return fmod(x[0], 5.f);
-  //return x[0] - 1;
-  //return x[0] * 100.f;
-
-  /* infamous Quake 3 inv sqrt */
-  float magic = 0x5f3759df;
-  float xhalf = 0.5f * x[0];
-  int i = *(int*)x;                   /* get bits for floating value */
-  i = magic - (i>>1);                 /* gives initial guess y0 */
-  x[0] = *(float*)&i;                 /* convert bits back to float */
-  x[0] = x[0]*(1.5f-xhalf*x[0]*x[0]); /* Newton step, repeating increases accuracy */
-  return x[0];
-}
-#endif
-
-#ifdef X86_USE_INT
-/* test multi-parameter */
-static s32 magic(s32 x[])
-{
-#if 0 /* found */
-  return x[0] + x[1];
-  return x[0] * x[1];
-  return (x[0] * x[1]) + x[2];
-  return 0x55555555 ^ x[0]; /* ha! found equivalence very quickly, i'm surprised */
-  return x[0] / x[1]; // found pretty quickly
-  return x[0] / (((x[2] * x[1]) / x[0]) + 1); /* found, not as quickly */
-  return x[0] ^ (x[1] << 16) ^ (x[2] >> 3);
-  return (x[0] > 0) - (x[0] < 0); /* return 1 for positive, 0 for zero, -1 for negative */
-  return x[0]+1; /* double-check that we can find a solution that contains
-                  * EXACTLY one instruction */
-  return x[0]+2;
-  return x[0]+x[1]+1;
-  return x[0]+3; /* double-check that we can find a solution that contains
-                  * EXACTLY one instruction */
-#endif
-
-/* I don't even know why this works, but it is pretty short :/
-GENERATION      53    3538944 genotypes (321722.2/sec) @Wed Feb 18 02:08:06 2009
-  0 c8 00 00 00                     enter
-  1 8b 45 08                        mov     0x8(%ebp), %eax
-  2 8b 5d 0c                        mov     0xc(%ebp), %ebx
-  3 8b 4d 10                        mov     0x10(%ebp), %ecx
-  4 c1 d8 22                        rol     0x22, %ebx, %eax
-  5 c1 e8 1f                        shr     0x1f, %eax
-  6 0f ba f8 4e                     btc     0x4e, %eax
-  7 81 f0 ff bf 00 00               xor     0x0000bfff, %eax
-  8 c9                              leave
-  9 c3                              ret
-->score=0
-  return 0xffff ^ (x[0] & 1);
-*/
-
-  return (s32)sqrt(x[0]);
-  
-#if 0 /* not found: */
-  return 0x55555555 | x[0]; // not found yet
-  /*
-   * we'll try to find a bitwise solution
-   * for calculating 1.f/sqrtf(x)
-   * in order to try to beat the quake3
-   * InvSqrt hack
-   *
-   * floating point on x86 is inherently slow
-   * due to longer cycles per operation and the
-   * requirement of all float loads be from memory
-   */
-  float  a = *(float *)x;   /* type-pun int->float */
-  float  b = 1.f/sqrtf(a);  /* calculate true value */
-  s32    c = *(s32 *)&b;    /* type-pun back */
-  return c;
-#endif
-}
-
-#endif
-
 /*
  * target input -> output data
  * this is what we test against
@@ -189,9 +83,11 @@ struct target Target[] = {
 };
 u32 TargetLen = sizeof Target  / sizeof Target[0];
 s32 TargetSum = 0;
+#endif
 
 /********************* END INPUT PART *****************************/
 
+#if 0
 #ifdef X86_USE_INT
 static void calc_target(void)
 {
@@ -206,55 +102,68 @@ static void calc_target(void)
   TargetSum = abs(TargetSum);
 }
 #endif
+#endif
 
 int Dump = 0; /* verbosity level */
 
-static u8 *x86;
-static u32 x86len;
 
-static void genoscore_exec(genoscore *g)
+static void *Iface_Handle = NULL;
+struct genx_iface *Iface = NULL;
+
+static struct genx_iface * load_module(const char *name)
 {
-  if (0 == g->geno.len) {
-    printf("genoscore empty, you suck\n");
+  char path[512];
+  snprintf(path, sizeof path, "%s%s%s", "problems/", name, MODULE_EXTENSION);
+  printf("module '%s' -> '%s'\n", name, path);
+  errno = 0;
+  Iface_Handle = dlopen(path, RTLD_NOW);
+  if (NULL == Iface_Handle) {
+    perror("dlopen");
   } else {
-    x86len = gen_compile(&g->geno, x86);
-    assert(score(x86, 1) == GENOSCORE_SCORE(g));
+    void *sym = dlsym(Iface_Handle, "load");
+    if (NULL == sym) {
+      perror("dlsym");
+      dlclose(Iface_Handle);
+    } else {
+      Iface = ((struct genx_iface *(*)())sym)();
+    }
   }
+  return Iface;
+}
+
+static void unload_module(void *handle)
+{
+  dlclose(handle);
+}
+
+static void pop_init(struct pop *p, const struct genx_iface *iface)
+{
+  p->len = iface->opt.gen_size;
+  p->indiv = malloc(sizeof *p->indiv * p->len);
+  assert(p->indiv != NULL);
+  memset(p->indiv, 0, sizeof *p->indiv * p->len);
 }
 
 int main(int argc, char *argv[])
 {
   static struct pop Pop;
-  /* mutation rates */
-  const double Mutate_Rate    = 0.2;  /* [0,1] larger values promote more
-                                       * more radical mutations */
   time_t       Start;
   genoscore    CurrBest;              /* save best found solution */
   u64          indivs         = 0;    /* total creatures created; status */
-  u32          generation     = 0,    /* track time; status */
-               gen_since_best = 0;    /* dead end counter */
-  x86 = malloc(1024);
-  printf("x86=%p\n", (void *)x86);
-  assert(NULL != x86);
+  u32          generation     = 0;    /* track time; status */
   /* show sizes of our core types in bytes */
   printf("sizeof Pop.indiv[0]=%lu\n", (unsigned long)(sizeof Pop.indiv[0]));
   printf("sizeof Pop=%lu\n", (unsigned long)(sizeof Pop));
   printf("FLT_EPSILON=%g\n", FLT_EPSILON);
   /* sanity-checks */
-  assert(CHROMO_MAX > 0);
+  assert(Iface->opt.chromo_max > 0);
   /* one-time initialization */
   x86_init();
   if (argc > 1) {
     Dump += 'd' == argv[1][1];
     Dump += (2 * ('D' == argv[1][1]));
   }
-  /*
-   * if called we set Target[i].out = magic(Target[i].in)
-   * if not called, Target[0..TargetLen-1].out assumed set
-   */
-#ifdef X86_USE_INT
-  calc_target();
-#endif
+  /* TODO: call interface init function */
   GENOSCORE_SCORE(&CurrBest) = GENOSCORE_MAX;
   CurrBest.geno.len = 0;
   rnd32_init((u32)time(NULL));
@@ -263,14 +172,14 @@ int main(int argc, char *argv[])
   /* sanity check, initialization checks */
   randr_test();
 
-  memset(&Pop, 0, sizeof Pop);
+  pop_init(&Pop, Iface);
 #ifndef WIN32
   nice(+19); /* be as polite to any other programs as possible */
 #endif
   Start = time(NULL);
   printf("Start=%lu\n", (unsigned long)Start);
 
-  pop_gen(&Pop, 0, Mutate_Rate); /* seminal generation */
+  pop_gen(&Pop, 0, Iface->opt.mutate_rate); /* seminal generation */
   /* evolve */
   /*
    * TODO: clean this up, pull it out of main
@@ -291,30 +200,14 @@ int main(int argc, char *argv[])
         gen_dump(&CurrBest.geno, stdout);
         printf("->score=%" PRIt "\n", GENOSCORE_SCORE(&Pop.indiv[0]));
         /* show detailed score from best candidate */
-        genoscore_exec(&CurrBest);
-        gen_since_best = 0;
+        score(&CurrBest, 1);
       }
     }
-    if (gen_since_best < GEN_DEADEND) {
-      pop_gen(&Pop, POP_KEEP, Mutate_Rate); /* retain best from previous */
-    } else {
-      /* we have run GEN_DEADEND generations and haven't made any progress;
-       * throw out our top genetic material and start fresh, but still
-       * retain CurrBest, against which all new candidates are judged */
-      gen_dump(&CurrBest.geno, stdout);
-      genoscore_exec(&CurrBest);
-      printf("No progress for %u generations, trying something new...\n", GEN_DEADEND);
-      pop_gen(&Pop, 0, Mutate_Rate); /* start over! */
-      gen_since_best = 0;
-    }
+    pop_gen(&Pop, Iface->opt.gen_keep, Iface->opt.mutate_rate); /* retain best from previous */
     generation++;
-    gen_since_best++;
-  } while (
-    !GENOSCORE_MATCH(&CurrBest)
-    || CurrBest.geno.len > GEN_PREFIX_LEN + 1 + GEN_SUFFIX_LEN /* shortest possible solution (excluding identity) */
-  );
+  } while (!(*Iface->test.i.done)(&CurrBest));
   printf("done.\n");
-  genoscore_exec(&CurrBest);
+  score(&CurrBest, 1);
   return 0;
 }
 

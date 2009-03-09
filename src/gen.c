@@ -19,6 +19,7 @@
 
 extern const struct x86 X86[X86_COUNT];
 extern int Dump;
+extern struct genx_iface *Iface;
 
 /**
  * populate g[off..off+len] with random chromosomes
@@ -42,7 +43,7 @@ do_over:
         goto do_over;
       /* generate prerequisite */
       g->chromo[i].x86 = MOV_IMM32_14EBP;
-      *(float *)&g->chromo[i].data = randfr(MIN_FLT_CONST, MAX_FLT_CONST);
+      *(float *)&g->chromo[i].data = randfr(Iface->test.f.min_const, Iface->test.f.max_const);
       i++;
       /* now put real one in */
       g->chromo[i].x86 = FLD_14EBP;
@@ -53,10 +54,10 @@ do_over:
       if (x->immlen) {
 #ifdef X86_USE_FLOAT
         if (FLT == x->flt)
-          *(float *)&g->chromo[i].data = randfr(MIN_FLT_CONST, MAX_FLT_CONST);
+          *(float *)&g->chromo[i].data = randfr(Iface->test.f.min_const, Iface->test.f.max_const);
         else
 #endif
-          *(u32 *)&g->chromo[i].data = randr(0, MAX_INT_CONST);
+          *(u32 *)&g->chromo[i].data = randr(0, Iface->test.i.max_const);
       }
 #ifdef X86_USE_FLOAT
     }
@@ -80,20 +81,20 @@ static void gen_mutate(genotype *g, const double mutate_rate)
  * a genotype passed to us has already been populated with
  * a prefix, a suffix and chromosomes in-between.
  *
- *    GEN_PREFIX_LEN                         GEN_PREFIX_LEN + CHROMO_MAX
+ *    GEN_PREFIX_LEN                         GEN_PREFIX_LEN + Iface->opt.chromo_max
  *          v                                               v
  * +--------------------------------------------------------+
  * | prefix |         c h r o m o s o m e s        | suffix |
  * +--------------------------------------------------------+
  *                                                 ^
- * g->len falls within the range GEN_PREFIX_LEN+(0,CHROMO_MAX).
+ * g->len falls within the range GEN_PREFIX_LEN+(0,Iface->opt.chromo_max).
  * g->len may be modified by (-1, 0, +1) each time, as long as it
  * stays within the proper bounds.
  */
 
 #ifdef DEBUG
   assert(g->len >= GEN_PREFIX_LEN);
-  assert(g->len <= GEN_PREFIX_LEN + CHROMO_MAX);
+  assert(g->len <= GEN_PREFIX_LEN + Iface->opt.chromo_max);
 #endif
 
 /*
@@ -138,7 +139,7 @@ static void gen_mutate(genotype *g, const double mutate_rate)
 /*
  * now we must select an "rlen", a replacement length. rlen
  * must be in the range:
- * (g->len < GEN_PREFIX + CHROMO_MAX) + (0, g->len - ooff)
+ * (g->len < GEN_PREFIX + Iface->opt.chromo_max) + (0, g->len - ooff)
  *
  * NOTE this allows ooff+rlen to be == g->len+1 iff g->len is
  * not already the maximum length.
@@ -161,7 +162,7 @@ static void gen_mutate(genotype *g, const double mutate_rate)
  *                            ooff   ooff+olen   g->len
  *
  * rlen's calculate must consider that the difference in rlen - olen
- * cannot be greater than the difference between g->len and GEN_PREFIX_LEN + CHROMO_MAX,
+ * cannot be greater than the difference between g->len and GEN_PREFIX_LEN + Iface->opt.chromo_max,
  * as it would push the suffix too far!
  */
 
@@ -171,13 +172,13 @@ static void gen_mutate(genotype *g, const double mutate_rate)
 #endif
 
   rlen = randr(olen - ((olen > 0) && (g->len > GEN_PREFIX_LEN)),
-               olen + (g->len < GEN_PREFIX_LEN + CHROMO_MAX));
+               olen + (g->len < GEN_PREFIX_LEN + Iface->opt.chromo_max));
 
 #ifdef DEBUG
-  assert(rlen <= CHROMO_MAX);
+  assert(rlen <= Iface->opt.chromo_max);
   assert(rlen <= g->len + 1);
-  assert(rlen <= g->len + (g->len < GEN_PREFIX_LEN + CHROMO_MAX));
-  assert(g->len - ooff + (int)(rlen - olen) < GEN_PREFIX_LEN + CHROMO_MAX);
+  assert(rlen <= g->len + (g->len < GEN_PREFIX_LEN + Iface->opt.chromo_max));
+  assert(g->len - ooff + (int)(rlen - olen) < GEN_PREFIX_LEN + Iface->opt.chromo_max);
   assert(ooff + MAX(olen, rlen) <= g->len + 1);
 #endif
 
@@ -225,7 +226,7 @@ static void gen_mutate(genotype *g, const double mutate_rate)
 
 #ifdef DEBUG
   assert(difflen <= (s32)g->len);
-  assert(g->len + difflen <= GEN_PREFIX_LEN + CHROMO_MAX);
+  assert(g->len + difflen <= GEN_PREFIX_LEN + Iface->opt.chromo_max);
   assert(abs(difflen) <= (s32)g->len);
   assert(abs(difflen) <= (s32)g->len - GEN_PREFIX_LEN + 1);
 #endif
@@ -234,9 +235,9 @@ static void gen_mutate(genotype *g, const double mutate_rate)
 
 #ifdef DEBUG
   assert(g->len >= GEN_PREFIX_LEN);
-  assert(g->len <= GEN_PREFIX_LEN + CHROMO_MAX);
+  assert(g->len <= GEN_PREFIX_LEN + Iface->opt.chromo_max);
 
-  assert(g->len <= GEN_PREFIX_LEN + CHROMO_MAX);
+  assert(g->len <= GEN_PREFIX_LEN + Iface->opt.chromo_max);
   if (RET == g->chromo[g->len-1].x86 || LEAVE == g->chromo[g->len-1].x86) {
     gen_dump(g, stdout);
     abort();
@@ -281,7 +282,7 @@ void pop_gen(struct pop *p, u32 keep, const double mutate_rate)
      * if a set if [0..keep-1] "best" are set, select a random one
      * to serve as the basis for each member of the new generation
      */
-    for (i = keep; i < sizeof p->indiv / sizeof p->indiv[0]; i++) {
+    for (i = keep; i < GEN_PREFIX_LEN + GEN_SUFFIX_LEN + Iface->opt.chromo_max; i++) {
       const genotype *src = &p->indiv[randr(0, keep-1)].geno;
       gen_gen(&p->indiv[i].geno, src, mutate_rate);
       GENOSCORE_SCORE(p->indiv+i) = GENOSCORE_MAX;
