@@ -117,48 +117,27 @@ const struct x86 X86[X86_COUNT] = {
 
   /* function contents */
 
+  /*
+   * jump instructions
+   * NOTE: many opcodes have more than one associated mnuemonic, we
+   *       strip all that shit out to increase signal/noise
+   */
   { "ja      0x%08" PRIx32    , { 0x0f, 0x87       }, 2, 0, R, 4, 1, I_86,  0,   0   },
   { "jae     0x%08" PRIx32    , { 0x0f, 0x83       }, 2, 0, R, 4, 1, I_86,  0,   0   },
   { "jb      0x%08" PRIx32    , { 0x0f, 0x82       }, 2, 0, R, 4, 1, I_86,  0,   0   },
   { "jbe     0x%08" PRIx32    , { 0x0f, 0x86       }, 2, 0, R, 4, 1, I_86,  0,   0   },
-#if 0 /* so many duplicate jump instructions... */
-  { "jc      0x%08" PRIx32    , { 0x0f, 0x82       }, 2, 0, R, 4, 1, I_86,  0,   0   },
-#endif
   { "je      0x%08" PRIx32    , { 0x0f, 0x84       }, 2, 0, R, 4, 1, I_86,  0,   0   },
   { "jg      0x%08" PRIx32    , { 0x0f, 0x8f       }, 2, 0, R, 4, 1, I_86,  0,   0   },
   { "jge     0x%08" PRIx32    , { 0x0f, 0x8d       }, 2, 0, R, 4, 1, I_86,  0,   0   },
   { "jl      0x%08" PRIx32    , { 0x0f, 0x8c       }, 2, 0, R, 4, 1, I_86,  0,   0   },
   { "jle     0x%08" PRIx32    , { 0x0f, 0x8e       }, 2, 0, R, 4, 1, I_86,  0,   0   },
-#if 0
-  { "jna     0x%08" PRIx32    , { 0x0f, 0x86       }, 2, 0, R, 4, 1, I_86,  0,   0   },
-  { "jnae    0x%08" PRIx32    , { 0x0f, 0x82       }, 2, 0, R, 4, 1, I_86,  0,   0   },
-  { "jnb     0x%08" PRIx32    , { 0x0f, 0x83       }, 2, 0, R, 4, 1, I_86,  0,   0   },
-  { "jnbe    0x%08" PRIx32    , { 0x0f, 0x87       }, 2, 0, R, 4, 1, I_86,  0,   0   },
-  { "jnc     0x%08" PRIx32    , { 0x0f, 0x83       }, 2, 0, R, 4, 1, I_86,  0,   0   },
-#endif
   { "jne     0x%08" PRIx32    , { 0x0f, 0x85       }, 2, 0, R, 4, 1, I_86,  0,   0   },
-#if 0
-  { "jng     0x%08" PRIx32    , { 0x0f, 0x8e       }, 2, 0, R, 4, 1, I_86,  0,   0   },
-  { "jnge    0x%08" PRIx32    , { 0x0f, 0x8c       }, 2, 0, R, 4, 1, I_86,  0,   0   },
-  { "jnl     0x%08" PRIx32    , { 0x0f, 0x8d       }, 2, 0, R, 4, 1, I_86,  0,   0   },
-  { "jnle    0x%08" PRIx32    , { 0x0f, 0x8f       }, 2, 0, R, 4, 1, I_86,  0,   0   },
-#endif
   { "jno     0x%08" PRIx32    , { 0x0f, 0x81       }, 2, 0, R, 4, 1, I_86,  0,   0   },
   { "jnp     0x%08" PRIx32    , { 0x0f, 0x8b       }, 2, 0, R, 4, 1, I_86,  0,   0   },
   { "jns     0x%08" PRIx32    , { 0x0f, 0x89       }, 2, 0, R, 4, 1, I_86,  0,   0   },
-#if 0
-  { "jnz     0x%08" PRIx32    , { 0x0f, 0x85       }, 2, 0, R, 4, 1, I_86,  0,   0   },
-#endif
   { "jo      0x%08" PRIx32    , { 0x0f, 0x80       }, 2, 0, R, 4, 1, I_86,  0,   0   },
   { "jp      0x%08" PRIx32    , { 0x0f, 0x8a       }, 2, 0, R, 4, 1, I_86,  0,   0   },
-#if 0
-  { "jpe     0x%08" PRIx32    , { 0x0f, 0x8a       }, 2, 0, R, 4, 1, I_86,  0,   0   },
-  { "jpo     0x%08" PRIx32    , { 0x0f, 0x8b       }, 2, 0, R, 4, 1, I_86,  0,   0   },
-#endif
   { "js      0x%08" PRIx32    , { 0x0f, 0x88       }, 2, 0, R, 4, 1, I_86,  0,   0   },
-#if 0
-  { "jz      0x%08" PRIx32    , { 0x0f, 0x84       }, 2, 0, R, 4, 1, I_86,  0,   0   },
-#endif
 
   /*
    * integer-related ops
@@ -169,12 +148,12 @@ const struct x86 X86[X86_COUNT] = {
   { "imul    0x%02" PRIx8 "," , { 0x6b             }, 1, 1, R, 1, 0, I_86,  INT, ALG },
   { "imul   "                 , { 0x0f, 0xaf       }, 2, 1, R, 0, 0, I_86,  INT, ALG },
   { "mov    "                 , { 0x8b             }, 1, 1, R, 0, 0, I_86,  INT, ALG },
-  { "xchg   "                 , { 0x87             }, 1, 1, R, 0, 0, I_86,  INT, ALG },
+  { "xchg   "                 , { 0x87             }, 1, 1, R, 0, 0, I_86,  INT, 0   },
   { "xor    "                 , { 0x33             }, 1, 1, R, 0, 0, I_86,  INT, BIT },
   { "xor     0x%08" PRIx32 ",", { 0x81             }, 1, 1, 6, 4, 0, I_86,  INT, BIT },
   { "xadd   "                 , { 0x0f, 0xc1       }, 2, 1, R, 0, 0, I_486, INT, ALG },
-  { "shr     0x%02" PRIx8 "," , { 0xc1             }, 1, 1, 5, 1, 0, I_86,  INT, ALG },
-  { "shl     0x%02" PRIx8 "," , { 0xc1             }, 1, 1, 4, 1, 0, I_86,  INT, ALG },
+  { "shr     0x%02" PRIx8 "," , { 0xc1             }, 1, 1, 5, 1, 0, I_86,  INT, BIT },
+  { "shl     0x%02" PRIx8 "," , { 0xc1             }, 1, 1, 4, 1, 0, I_86,  INT, BIT },
   { "or     "                 , { 0x0b             }, 1, 1, R, 0, 0, I_86,  INT, ALG },
   { "and    "                 , { 0x23             }, 1, 1, R, 0, 0, I_86,  INT, ALG },
   { "and     0x%08" PRIx32 ",", { 0x81             }, 1, 1, 4, 4, 0, I_86,  INT, ALG },
@@ -192,44 +171,44 @@ const struct x86 X86[X86_COUNT] = {
   { "btr     0x%02" PRIx8 "," , { 0x0f, 0xba       }, 2, 1, 6, 1, 0, I_386, INT, ALG },
   { "cmp    "                 , { 0x39             }, 1, 1, R, 0, 0, I_386, INT, ALG },
   { "cmp     0x%08" PRIx32 ",", { 0x81             }, 1, 1, 7, 4, 0, I_386, INT, ALG },
-  { "cmpxchg"                 , { 0x0f, 0xb1       }, 2, 1, R, 0, 0, I_486, INT, ALG },
+  { "cmpxchg"                 , { 0x0f, 0xb1       }, 2, 1, R, 0, 0, I_486, INT, 0   },
   { "rcl     0x%02" PRIx8 "," , { 0xc1             }, 1, 1, 2, 1, 0, I_86,  INT, BIT },
   { "rcr     0x%02" PRIx8 "," , { 0xc1             }, 1, 1, 3, 1, 0, I_86,  INT, BIT },
   { "rol     0x%02" PRIx8 "," , { 0xc1             }, 1, 1, R, 1, 0, I_86,  INT, BIT },
   { "ror     0x%02" PRIx8 "," , { 0xc1             }, 1, 1, 1, 1, 0, I_86,  INT, BIT },
-  { "cmova  "                 , { 0x0f, 0x47       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovb  "                 , { 0x0f, 0x42       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovbe "                 , { 0x0f, 0x46       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovc  "                 , { 0x0f, 0x42       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmove  "                 , { 0x0f, 0x44       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovg  "                 , { 0x0f, 0x4f       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovge "                 , { 0x0f, 0x4d       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovl  "                 , { 0x0f, 0x4c       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovle "                 , { 0x0f, 0x4e       }, 2, 1, R, 0, 0, I_686, INT, ALG },
+  { "cmova  "                 , { 0x0f, 0x47       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovb  "                 , { 0x0f, 0x42       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovbe "                 , { 0x0f, 0x46       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovc  "                 , { 0x0f, 0x42       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmove  "                 , { 0x0f, 0x44       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovg  "                 , { 0x0f, 0x4f       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovge "                 , { 0x0f, 0x4d       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovl  "                 , { 0x0f, 0x4c       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovle "                 , { 0x0f, 0x4e       }, 2, 1, R, 0, 0, I_686, INT, 0   },
 #if 0
-  { "cmovna "                 , { 0x0f, 0x46       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovnae"                 , { 0x0f, 0x42       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovnb "                 , { 0x0f, 0x43       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovnbe"                 , { 0x0f, 0x47       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovnc "                 , { 0x0f, 0x43       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovne "                 , { 0x0f, 0x45       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovng "                 , { 0x0f, 0x4e       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovnge"                 , { 0x0f, 0x4c       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovnl "                 , { 0x0f, 0x4d       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovnle"                 , { 0x0f, 0x4f       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovno "                 , { 0x0f, 0x41       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovnp "                 , { 0x0f, 0x4b       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovns "                 , { 0x0f, 0x49       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovnz "                 , { 0x0f, 0x45       }, 2, 1, R, 0, 0, I_686, INT, ALG },
+  { "cmovna "                 , { 0x0f, 0x46       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovnae"                 , { 0x0f, 0x42       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovnb "                 , { 0x0f, 0x43       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovnbe"                 , { 0x0f, 0x47       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovnc "                 , { 0x0f, 0x43       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovne "                 , { 0x0f, 0x45       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovng "                 , { 0x0f, 0x4e       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovnge"                 , { 0x0f, 0x4c       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovnl "                 , { 0x0f, 0x4d       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovnle"                 , { 0x0f, 0x4f       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovno "                 , { 0x0f, 0x41       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovnp "                 , { 0x0f, 0x4b       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovns "                 , { 0x0f, 0x49       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovnz "                 , { 0x0f, 0x45       }, 2, 1, R, 0, 0, I_686, INT, 0   },
 #endif
-  { "cmovo  "                 , { 0x0f, 0x40       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovp  "                 , { 0x0f, 0x4a       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovpe "                 , { 0x0f, 0x4a       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovpo "                 , { 0x0f, 0x4b       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovs  "                 , { 0x0f, 0x48       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "cmovz  "                 , { 0x0f, 0x44       }, 2, 1, R, 0, 0, I_686, INT, ALG },
-  { "inc    "                 , { 0xff             }, 1, 1, 0, 0, 0, I_86,  INT, ALG },
-  { "dec    "                 , { 0xff             }, 1, 1, 1, 0, 0, I_86,  INT, ALG },
+  { "cmovo  "                 , { 0x0f, 0x40       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovp  "                 , { 0x0f, 0x4a       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovpe "                 , { 0x0f, 0x4a       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovpo "                 , { 0x0f, 0x4b       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovs  "                 , { 0x0f, 0x48       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "cmovz  "                 , { 0x0f, 0x44       }, 2, 1, R, 0, 0, I_686, INT, 0   },
+  { "inc    "                 , { 0xff             }, 1, 1, 0, 0, 0, I_86,  INT, 0   },
+  { "dec    "                 , { 0xff             }, 1, 1, 1, 0, 0, I_86,  INT, 0   },
 #endif
 
   { "lea     0x8(%%ebp), %%eax" ,{ 0x8d, 0x45, 0x08}, 3, 0, R, 0, 0, I_86,  0,   0   },

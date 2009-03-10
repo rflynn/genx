@@ -67,7 +67,9 @@ do_over:
 
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
-static void gen_mutate(genotype *g, const double mutate_rate)
+#define DEBUG
+
+static void gen_mutate(genotype *g)
 {
   u32 ooff,
       olen,
@@ -249,16 +251,28 @@ static void gen_mutate(genotype *g, const double mutate_rate)
 
 }
 
+void gen_copy(genotype *dst, const genotype *src)
+{
+  dst->len = src->len;
+  memcpy(dst->chromo, src->chromo, src->len * sizeof src->chromo[0]);
+}
+
+void genoscore_copy(genoscore *dst, const genoscore *src)
+{
+  dst->score = src->score;
+  gen_copy(&dst->geno, &src->geno);
+}
+
 /**
  *
  */
-static void gen_gen(genotype *dst, const genotype *src, const double mutate_rate)
+static void gen_gen(genotype *dst, const genotype *src)
 {
   if (src) {
     /* mutate an existing genotype; by far the most common */
-    *dst = *src;
+    gen_copy(dst, src);
     dst->len -= GEN_SUFFIX_LEN;
-    gen_mutate(dst, mutate_rate);
+    gen_mutate(dst);
   } else {
     /* initial generation or re-generation from scratch, far less common */
     /*
@@ -271,10 +285,23 @@ static void gen_gen(genotype *dst, const genotype *src, const double mutate_rate
     GEN_PREFIX(dst);
     chromo_random(dst, GEN_PREFIX_LEN, 1);
   }
+
+    const genotype *g = dst;
+    assert(g->len > GEN_PREFIX_LEN);
+
   GEN_SUFFIX(dst);
+
+    assert(g->len > GEN_PREFIX_LEN + GEN_SUFFIX_LEN);
+    assert(g->chromo[0].x86 == ENTER);
+    assert(g->chromo[1].x86 == MOV_8_EBP_EAX);
+    assert(g->chromo[2].x86 == MOV_C_EBP_EBX);
+    assert(g->chromo[3].x86 == MOV_10_EBP_ECX);
+    assert(g->chromo[g->len - 2].x86 == LEAVE);
+    assert(g->chromo[g->len - 1].x86 == RET);
+
 }
 
-void pop_gen(struct pop *p, u32 keep, const double mutate_rate)
+void pop_gen(struct pop *p, const u32 keep, const genx_iface *iface)
 {
   u32 i;
   if (keep > 0) {
@@ -282,19 +309,19 @@ void pop_gen(struct pop *p, u32 keep, const double mutate_rate)
      * if a set if [0..keep-1] "best" are set, select a random one
      * to serve as the basis for each member of the new generation
      */
-    for (i = keep; i < GEN_PREFIX_LEN + GEN_SUFFIX_LEN + Iface->opt.chromo_max; i++) {
+    for (i = keep; i < GEN_PREFIX_LEN + GEN_SUFFIX_LEN + iface->opt.chromo_max; i++) {
       const genotype *src = &p->indiv[randr(0, keep-1)].geno;
-      gen_gen(&p->indiv[i].geno, src, mutate_rate);
-      GENOSCORE_SCORE(p->indiv+i) = GENOSCORE_MAX;
+      gen_gen(&p->indiv[i].geno, src);
+      GENOSCORE_SCORE(p->indiv+i) = GENOSCORE_WORST;
     }
   } else {
     /*
      * initial generation (or re-generation from scratch), do not
      * use a 'src' element
      */
-    for (i = 0; i < sizeof p->indiv / sizeof p->indiv[0]; i++) {
-      gen_gen(&p->indiv[i].geno, NULL, mutate_rate);
-      GENOSCORE_SCORE(p->indiv+i) = GENOSCORE_MAX;
+    for (i = 0; i < iface->opt.pop_size; i++) {
+      gen_gen(&p->indiv[i].geno, NULL);
+      GENOSCORE_SCORE(p->indiv+i) = GENOSCORE_WORST;
     }
   }
 }
@@ -393,7 +420,7 @@ static s32 gen_jmp_pos(const genotype *g, const u32 off, u32 rel, u32 idx)
   if (idx == g->len - 1)
     return 0;
   rel = idx + 1 + (rel % (g->len - idx - 2));
-  assert(rel < sizeof g->chromo / sizeof g->chromo[0]);
+  assert(rel < Iface->opt.chromo_max + GEN_PREFIX_LEN + GEN_SUFFIX_LEN);
   for (i = 0; i < rel; i++)
     total += chromo_bytes(g->chromo + i);
   res = (s32)(total - off); /* calculate byte offset */
@@ -405,7 +432,7 @@ static s32 gen_jmp_pos(const genotype *g, const u32 off, u32 rel, u32 idx)
   return res;
 }
 
-u32 gen_compile(genotype *g, u8 *buf)
+u32 gen_compile(genotype *g, u8 *buf, size_t buflen)
 {
   u32 i,
       len = 0;
@@ -436,24 +463,11 @@ int genoscore_lencmp(const void *va, const void *vb)
   return cmp;
 }
 
-void pop_score(struct pop *p)
+void pop_score(struct pop *p, const genx_iface *iface)
 {
-  static u8 x86[1024];
-  u32 i;
-  for (i = 0; i < sizeof p->indiv / sizeof p->indiv[0]; i++) {
-    u32 x86len;
-    assert(p->indiv[i].geno.chromo[0].x86 < X86_COUNT);
-    assert(p->indiv[i].geno.chromo[1].x86 < X86_COUNT);
-    assert(p->indiv[i].geno.chromo[2].x86 < X86_COUNT);
-    x86len = gen_compile(&p->indiv[i].geno, x86);
-    if (Dump > 0)
-      x86_dump(x86, x86len, stdout);
-    if (Dump > 1)
-      (void)gen_dump(&p->indiv[i].geno, stdout);
-    GENOSCORE_SCORE(&p->indiv[i]) = score(x86, 0);
-  }
-  qsort(p->indiv, sizeof p->indiv / sizeof p->indiv[0],
-                                    sizeof p->indiv[0], genoscore_lencmp);
+  for (u32 i = 0; i < iface->opt.pop_size; i++)
+    score(p->indiv + i, iface, 0);
+  qsort(p->indiv, iface->opt.pop_size, sizeof *p->indiv, genoscore_lencmp);
 }
 
 #if 0
@@ -510,4 +524,38 @@ static void test_load(void)
   gen_dump(&g, stdout);
 }
 #endif
+
+void genx_iface_dump(const genx_iface *iface)
+{
+  printf("genx_iface(%p):\n", (void *)iface);
+  printf(" .test:\n");
+  printf("  .i:\n");
+  printf("   .score.......%d\n",  iface->test.i.score);
+  printf("   .max_const...%lu\n", (unsigned long)iface->test.i.max_const);
+  printf("   .func........%p\n",  (void *)iface->test.i.func);
+  printf("   .done........%p\n",  (void *)iface->test.i.done);
+  printf("   .data\n");
+  printf("     .len.......%lu\n", (unsigned long)iface->test.i.data.len);
+  printf("     [0]: .in { %lu, %lu, %lu, %lu } .out { %lu }\n",
+                                  (unsigned long)iface->test.i.data.list[0].in[0],
+                                  (unsigned long)iface->test.i.data.list[0].in[1],
+                                  (unsigned long)iface->test.i.data.list[0].in[2],
+                                  (unsigned long)iface->test.i.data.list[0].in[3],
+                                  (unsigned long)iface->test.i.data.list[0].out);
+  printf(" .opt:\n");
+  printf("  .param_cnt....%lu\n", (unsigned long)iface->opt.param_cnt);
+  printf("  .chromo_min...%lu\n", (unsigned long)iface->opt.chromo_min);
+  printf("  .chromo_max...%lu\n", (unsigned long)iface->opt.chromo_max);
+  printf("  .pop_size.....%lu\n", (unsigned long)iface->opt.pop_size);
+  printf("  .pop_keep.....%lu\n", (unsigned long)iface->opt.pop_keep);
+  printf("  .gen_deadend..%lu\n", (unsigned long)iface->opt.gen_deadend);
+  printf("  .mutate_rate..%.3f\n", iface->opt.mutate_rate);
+  printf(" .x86:\n");
+  printf("  .int_ops......%d\n", iface->opt.x86.int_ops);
+  printf("  .float_ops....%d\n", iface->opt.x86.float_ops);
+  printf("  .algebra_ops..%d\n", iface->opt.x86.algebra_ops);
+  printf("  .bit_ops......%d\n", iface->opt.x86.bit_ops);
+  printf("  .random_const.%d\n", iface->opt.x86.random_const);
+}
+
 

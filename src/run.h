@@ -16,7 +16,7 @@
 #include "typ.h"
 #include "gen.h"
 
-void score(genoscore *, int verbose);
+void score(genoscore *, const genx_iface *, int verbose);
 
 #endif
 

@@ -30,6 +30,18 @@ TODO
         this shouldn't be too hard, too CPU-intensive or too complex, but
         it will get people more excited about using it.
 
+ * fairly simple optimization
+  
+   when scoring a candidate, if score == WORST_POSSIBLE, then don't even
+   bother incrementing the index; write the contents of subseqent genotypes
+   in the same place, unless one scores better than the WORST_POSSIBLE.
+   in the case that no candidate genotype scores better than WORST then
+   we adopt the last candidate (though this won't exactly work if GEN_KEEP > 1...
+   so we should loop at least GEN_KEEP - 1 candidate before this optimization).
+   in any other case we wish to retain better scores and we discard WORST
+   scores anyways.
+   this takes advantage of CPU cache and should be significantly faster.
+
  * implement proper looping.
   
    so far the only sort of branching we have are conditional moves
@@ -53,18 +65,14 @@ TODO
      and/or prefix/suffix, then do it; if it requires a whole new path
      for generation, then I probably won't do it immediately.
 
- * modify mutation to be more interesting; for example, given an
+ * modify mutation to account to separately consider function and parameter
+   for example, given an
   (+ 0x01234567) operation, maybe just mutate the number, or part
   of the number. or maybe modify the operation but leave the number.
 
    try mutation of just a single instruction at a time, see if we get better
    results; I thought 
 
- * define a proper interface so we can lib-ize the evolution/x86 part and can
-   separate the "problem" we are trying to solve into a separate program.
-
- * add support for multiple input parameters
- 
  * implement some basic guidance for the function generation:
 
     * create an enumeration of all possible data storage destinations
@@ -78,6 +86,15 @@ TODO
     this will increase the cost of generating a single function, but i believe
     it will produce output of higher quality, and thus reduce the overall time
     wasted on functions which are complete garbage.
+
+ * implement worker threads
+
+   this application is embarassingly parallel; allow for a configurable
+   number of worker threads to be launched for the purpose of mutating and
+   evaluating genotypes.
+
+   note that it's much more important to work smarter than faster; so improve
+   the algorithms before you do this(!)
 
  * implement a "simplify" function. this would identify effectless or redundant
    operations, such as performing some operations more than once in a row, and

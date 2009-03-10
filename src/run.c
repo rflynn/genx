@@ -14,10 +14,10 @@
 #include <math.h>
 #include <limits.h>
 #include "typ.h"
+#include "x86.h"
 #include "run.h"
 
 extern int Dump;
-extern struct genx_iface *Iface;
 
 #if 0
 static float score_f(const void *f, int verbose);
@@ -122,13 +122,17 @@ static u32 popcnt(u32 n);
  * score -- a distance from the ideal output.
  * a score of 0 indicates a perfect match against the test input
  */
-void score(genoscore *g, int verbose)
+void score(genoscore *g, const genx_iface *iface, int verbose)
 {
   static u8 x86[1024];
-  static u32 x86len;
   volatile u32 scor = 0, i;
-  u32 targetsum = 0;
-  x86len = gen_compile(&g->geno, x86);
+  u32 targetsum = 0,
+      testcnt,
+      x86len = gen_compile(&g->geno, x86, sizeof x86);
+  if (Dump > 0)
+    x86_dump(x86, x86len, stdout);
+  if (Dump > 1)
+    (void)gen_dump(&g->geno, stdout);
   //assert(score(x86, 1) == GENOSCORE_SCORE(g));
   if (verbose || Dump >= 2) {
     printf("%-35s %-23s %-23s\n"
@@ -141,22 +145,23 @@ void score(genoscore *g, int verbose)
            "Input", "Output", "Difference",
            "a", "b", "c", "expected", "actual", "diff", "sum(diff)");
   }
-  for (i = 0; i < Iface->test.i.data.len; i++) {
-    volatile u32 sc   = shim_i(x86, (*Iface->test.i.data.list[i].in)[0],
-                                    (*Iface->test.i.data.list[i].in)[1],
-                                    (*Iface->test.i.data.list[i].in)[2]);
+  testcnt = iface->test.i.data.len;
+  for (i = 0; i < testcnt; i++) {
+    volatile u32 sc   = shim_i(x86, iface->test.i.data.list[i].in[0],
+                                    iface->test.i.data.list[i].in[1],
+                                    iface->test.i.data.list[i].in[2]);
     u32 diff;
-    targetsum += Iface->test.i.data.list[i].out;
-    if (SCORE_BIT == Iface->test.i.score) {
+    targetsum += iface->test.i.data.list[i].out;
+    if (SCORE_BIT == iface->test.i.score) {
       /*
        * bitwise distance, useful for, well, bitwise functions
        */
-      diff = popcnt(sc ^ Iface->test.i.data.list[i].out);
+      diff = popcnt(sc ^ iface->test.i.data.list[i].out);
     } else {
       /*
        * arithmetic distance, useful for arithmetic functions
        */
-      diff = (u32)abs((s32)Iface->test.i.data.list[i].out - (s32)sc);
+      diff = (u32)abs((s32)iface->test.i.data.list[i].out - (s32)sc);
     }
     if (0xFFFFFFFFU - diff < scor) {
       scor = 0xFFFFFFFFU;
@@ -166,10 +171,10 @@ void score(genoscore *g, int verbose)
     if (verbose || Dump >= 2)
       printf(" 0x%08" PRIx32 "  0x%08" PRIx32 "  0x%08" PRIx32
             "  0x%08" PRIx32 "  0x%08" PRIx32 " %11" PRIu32 " %11" PRIu32 "\n",
-        (*Iface->test.i.data.list[i].in)[0],
-        (*Iface->test.i.data.list[i].in)[1],
-        (*Iface->test.i.data.list[i].in)[2],
-        Iface->test.i.data.list[i].out,
+        iface->test.i.data.list[i].in[0],
+        iface->test.i.data.list[i].in[1],
+        iface->test.i.data.list[i].in[2],
+        iface->test.i.data.list[i].out,
         sc, diff, scor);
   }
   if (verbose || Dump >= 2) {

@@ -5,16 +5,17 @@
 # -fprofile-arcs -ftest-coverage
 
 CFLAGS = -W -Wall -Wshadow -pedantic -std=gnu99 -g -m32
-LDFLAGS = -lm -m32
+LDFLAGS = -lm -m32 -ldl
 BIN = genx
 ALL = genx
 OBJ = rnd.o x86.o gen.o run.o genx.o
 
-fast:
-	$(MAKE) "CFLAGS=$(CFLAGS) -Os" int
-
 debug:
 	$(MAKE) "CFLAGS=$(CFLAGS) -O0" int
+
+
+fast:
+	$(MAKE) "CFLAGS=$(CFLAGS) -Os" int
 
 int:
 	$(MAKE) "CFLAGS=$(CFLAGS) -DX86_USE_INT" genx

@@ -64,8 +64,7 @@
 #endif
 
 struct genotype {
-  u32 size,
-      len;
+  u32 len;
   struct op {
     u8 x86,     /* index into X86[] */
        modrm,   /* mod/rm byte, if used */
@@ -73,6 +72,8 @@ struct genotype {
   } *chromo;
 };
 typedef struct genotype genotype;
+
+void gen_copy(genotype *dst, const genotype *src);
 
 struct pop {
   u32 len;
@@ -86,28 +87,25 @@ struct pop {
 };
 typedef struct genoscore genoscore;
 
-void gen_dump(const genotype *g, FILE *f);
-u32  gen_compile(genotype *g, u8 *buf);
+void genoscore_copy(genoscore *dst, const genoscore *src);
+void gen_dump(const genotype *, FILE *);
+u32  gen_compile(genotype *, u8 *, size_t);
 
-void pop_gen(struct pop *p,
-             u32 keep,
-             const double mutate_rate);
-
-void pop_score(struct pop *p);
-int genoscore_cmp   (const void *, const void *);
 int genoscore_lencmp(const void *, const void *);
 
 #ifdef X86_USE_FLOAT
 # define GENOSCORE_SCORE(gs)  ((gs)->score.f)
-# define GENOSCORE_MAX        FLT_MAX
-# define GENOSCORE_MIN        FLT_EPSILON
+# define GENOSCORE_WORST      FLT_MAX
+# define GENOSCORE_BEST       FLT_EPSILON
 #else
 # define GENOSCORE_SCORE(gs)  ((gs)->score.i)
-# define GENOSCORE_MAX        INT_MAX
-# define GENOSCORE_MIN        0
+# define GENOSCORE_WORST      INT_MAX
+# define GENOSCORE_BEST       0
 #endif
 
-#define GENOSCORE_MATCH(gs)   (GENOSCORE_SCORE(gs) <= GENOSCORE_MIN)
+#define GENOSCORE_MATCH(gs)   (GENOSCORE_SCORE(gs) <= GENOSCORE_BEST)
+
+#define CHROMO_SIZE(iface)    (GEN_PREFIX_LEN + GEN_SUFFIX_LEN + (iface)->opt.chromo_max)
 
 enum scoretype {
   SCORE_BIT,
@@ -124,7 +122,7 @@ struct genx_iface {
 	    struct {
 		    const unsigned len;
         const struct {
-          u32   (*in)[4],
+          u32   in[4],
                 out;
         } *list;
       } data;
@@ -138,8 +136,8 @@ struct genx_iface {
 		u32      param_cnt,
 		         chromo_min, 
 		         chromo_max,
-		         gen_size,
-		         gen_keep;
+		         pop_size,
+		         pop_keep;
 		u64 		 gen_deadend; 
     double   mutate_rate;
     struct x86_opts {
@@ -152,6 +150,12 @@ struct genx_iface {
 	  } x86;       
   } opt;
 };
+typedef struct genx_iface genx_iface;
+
+void pop_score(struct pop *p, const genx_iface *);
+void pop_gen(struct pop *, u32 keep, const genx_iface *);
+             
+void genx_iface_dump(const genx_iface *);
 
 #endif
 
