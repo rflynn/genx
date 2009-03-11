@@ -67,8 +67,6 @@ do_over:
 
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
-#define DEBUG
-
 static void gen_mutate(genotype *g)
 {
   u32 ooff,
@@ -173,7 +171,7 @@ static void gen_mutate(genotype *g)
   assert(g->len - ooff - olen < g->len);
 #endif
 
-  rlen = randr(olen - ((olen > 0) && (g->len > GEN_PREFIX_LEN)),
+  rlen = randr(olen - ((olen > 0) && (g->len - olen > GEN_PREFIX_LEN)),
                olen + (g->len < GEN_PREFIX_LEN + Iface->opt.chromo_max));
 
 #ifdef DEBUG
@@ -236,7 +234,7 @@ static void gen_mutate(genotype *g)
   g->len += difflen;
 
 #ifdef DEBUG
-  assert(g->len >= GEN_PREFIX_LEN);
+  assert(g->len > GEN_PREFIX_LEN);
   assert(g->len <= GEN_PREFIX_LEN + Iface->opt.chromo_max);
 
   assert(g->len <= GEN_PREFIX_LEN + Iface->opt.chromo_max);
@@ -309,7 +307,7 @@ void pop_gen(struct pop *p, const u32 keep, const genx_iface *iface)
      * if a set if [0..keep-1] "best" are set, select a random one
      * to serve as the basis for each member of the new generation
      */
-    for (i = keep; i < GEN_PREFIX_LEN + GEN_SUFFIX_LEN + iface->opt.chromo_max; i++) {
+    for (i = keep; i < iface->opt.pop_size; i++) {
       const genotype *src = &p->indiv[randr(0, keep-1)].geno;
       gen_gen(&p->indiv[i].geno, src);
       GENOSCORE_SCORE(p->indiv+i) = GENOSCORE_WORST;
@@ -334,6 +332,7 @@ void gen_dump(const struct genotype *g, FILE *f)
   char hex[24],
        *h;
   u32 i, j;
+  printf("g->len=%" PRIu32 " g->chromo=%p\n", g->len, (void *)g->chromo);
   for (i = 0; i < g->len; i++) {
     const struct x86 *x = X86 + g->chromo[i].x86;
     h = hex;
@@ -350,7 +349,7 @@ void gen_dump(const struct genotype *g, FILE *f)
       h += 3;
     }
     memset(h, ' ', sizeof hex - (h - hex));
-    hex[23] = '\0';
+    hex[(sizeof hex) - 1] = '\0';
     fprintf(f, "%3" PRIu32 " %s", i, hex);
     fprintf(f, x->descr, *(u32 *)&g->chromo[i].data);
     if (x->modrmlen) {
@@ -463,11 +462,57 @@ int genoscore_lencmp(const void *va, const void *vb)
   return cmp;
 }
 
-void pop_score(struct pop *p, const genx_iface *iface)
+/**
+ * shorter is better, given same score
+ */
+static int score_id_lencmp(const void *va, const void *vb)
 {
-  for (u32 i = 0; i < iface->opt.pop_size; i++)
+  register const struct score_id *a = va,
+                                 *b = vb;
+  if (GENOSCORE_SCORE(a) > GENOSCORE_SCORE(b))
+    return 1;
+  else if (GENOSCORE_SCORE(a) < GENOSCORE_SCORE(b))
+    return -1;
+  else if (a->len > b->len)
+    return 1;
+  else if (a->len < b->len)
+    return -1;
+  return 0;
+}
+
+inline static void genoscore_swap(genoscore *a, genoscore *b, genoscore *tmp)
+{
+  genoscore_copy(tmp, a);
+  genoscore_copy(a,   b);
+  genoscore_copy(b,   tmp);
+}
+
+void pop_score(struct pop *p, const genx_iface *iface, genoscore *tmp)
+{
+  u32 w = 0;
+  for (u32 i = 0; i < iface->opt.pop_size; i++) {
     score(p->indiv + i, iface, 0);
-  qsort(p->indiv, iface->opt.pop_size, sizeof *p->indiv, genoscore_lencmp);
+    if (GENOSCORE_NOT_WORST(p->indiv+i) || i < iface->opt.pop_keep) {
+      /*
+       * only count scores that are better than worst; since
+       * the vast majority will be == WORST possible.
+       * this greatly reduces the number of items to sort.
+       * NOTE: guarentee we result in at least 'pop_keep' number
+       * of unique entries
+       */
+      p->scores[w].score = p->indiv[i].score;
+      p->scores[w].len = p->indiv[i].geno.len;
+      p->scores[w].id = i;
+      w++;
+    }
+  }
+  qsort(p->scores, w, sizeof *p->scores, score_id_lencmp);
+  /* copy the best pop_keep items to the front */
+  for (u32 i = 0; i < iface->opt.pop_keep; i++) {
+    genoscore_swap(p->indiv + i,
+                   p->indiv + p->scores[i].id,
+                   tmp);
+  }
 }
 
 #if 0

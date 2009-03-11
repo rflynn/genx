@@ -14,13 +14,11 @@
 #include <limits.h>
 #include "typ.h"
 
-#if 0
-#define POP_SIZE        64 * 1024 /* total genotypes in a population generation */
-#define CHROMO_MAX      128       /* maximum chromosomes in a genotype */
-#define MAX_INT_CONST   0xFFFF    /* maximum possible random integer value */
-#define MAX_FLT_CONST   10.f      /* max random floating point val */
-#define MIN_FLT_CONST  -10.f      /* min random floating point val */
-#endif
+#define DEFAULT_POP_SIZE        64 * 1024 /* total genotypes in a population generation */
+#define DEFAULT_CHROMO_MAX      128       /* maximum chromosomes in a genotype */
+#define DEFAULT_MAX_INT_CONST   0xFFFF    /* maximum possible random integer value */
+#define DEFAULT_MAX_FLT_CONST   10.f      /* max random floating point val */
+#define DEFAULT_MIN_FLT_CONST  -10.f      /* min random floating point val */
 
 /*
  * define common op prefix for all functions;
@@ -77,11 +75,16 @@ void gen_copy(genotype *dst, const genotype *src);
 
 struct pop {
   u32 len;
-  struct genoscore {
-    union {
+  struct score_id {
+    union sc {
       float f;
       u32   i;
     } score;
+    u32 len,
+        id;
+  } *scores;
+  struct genoscore {
+    union sc score;
     struct genotype geno;
   } *indiv;
 };
@@ -103,7 +106,11 @@ int genoscore_lencmp(const void *, const void *);
 # define GENOSCORE_BEST       0
 #endif
 
-#define GENOSCORE_MATCH(gs)   (GENOSCORE_SCORE(gs) <= GENOSCORE_BEST)
+#define GENOSCORE_MATCH(gs)     (GENOSCORE_SCORE(gs) <= GENOSCORE_BEST)
+/*
+ * better than the worst-possible score
+ */
+#define GENOSCORE_NOT_WORST(gs) (GENOSCORE_SCORE(gs) < GENOSCORE_WORST)
 
 #define CHROMO_SIZE(iface)    (GEN_PREFIX_LEN + GEN_SUFFIX_LEN + (iface)->opt.chromo_max)
 
@@ -152,7 +159,7 @@ struct genx_iface {
 };
 typedef struct genx_iface genx_iface;
 
-void pop_score(struct pop *p, const genx_iface *);
+void pop_score(struct pop *, const genx_iface *, genoscore *tmp);
 void pop_gen(struct pop *, u32 keep, const genx_iface *);
              
 void genx_iface_dump(const genx_iface *);

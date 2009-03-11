@@ -90,22 +90,27 @@ static void * unload_module(void *handle)
 static void pop_init(struct pop *p, const genx_iface *iface)
 {
   p->len = iface->opt.pop_size;
-  p->indiv = malloc(sizeof *p->indiv * p->len);
+  p->indiv = malloc(p->len * sizeof p->indiv[0]);
   assert(p->indiv != NULL);
   p->indiv[0].geno.len = 0;
   /* enough space for all chromosomes for entire pop to [0] */
-  p->indiv[0].geno.chromo = malloc(p->len * (CHROMO_SIZE(iface) * sizeof(struct op)));
+  p->indiv[0].geno.chromo = malloc(p->len *
+    (CHROMO_SIZE(iface) * sizeof(struct op)));
   assert(p->indiv[0].geno.chromo && "Use smaller pop_size, fewer chromo_max or buy more RAM");
   /* initialize all indivs */
   for (u32 i = 1; i < p->len; i++) {
     p->indiv[i].geno.len = 0;
     /* assign each individual a slice of the whole contiguous memory vector */
     p->indiv[i].geno.chromo = p->indiv[i-1].geno.chromo + CHROMO_SIZE(iface);
+    //p->indiv[i].geno.chromo = malloc(CHROMO_SIZE(iface) * sizeof(struct op));
   }
+  p->scores = malloc(iface->opt.pop_size * sizeof *p->scores);
+  assert(p->scores);
 }
 
 static void evolve(
         genoscore  *best,
+        genoscore  *tmp,
         struct pop *pop,
   const genx_iface *iface,
   const time_t      start)
@@ -117,15 +122,15 @@ static void evolve(
   pop_gen(pop, 0, iface);
   do {
     int progress;
-    pop_score(pop, iface);
+    pop_score(pop, iface, tmp);
     progress = -1 == genoscore_lencmp(pop->indiv, best);
-    if (progress || 0 == gencnt % 100) { /* display generation regularly or on progress */
-      u64 indivs = iface->opt.pop_size * gencnt;
+    if (progress || 0 == gencnt % 1000) { /* display generation regularly or on progress */
+      u64 indivs = iface->opt.pop_size * (gencnt + 1);
       time_t t = time(NULL);
       printf("GENERATION %7" PRIu32 " %10" PRIu64 " genotypes (%.1f/sec) @%s",
         gencnt, indivs, (double)indivs / (t - start + 0.0001), ctime(&t));
       if (progress) {
-        genoscore_copy(best, pop->indiv);
+        genoscore_copy(best, &pop->indiv[0]);
         gen_dump(&best->geno, stdout);
         printf("->score=%" PRIt "\n", GENOSCORE_SCORE(pop->indiv));
         score(best, iface, 1);
@@ -139,7 +144,8 @@ static void evolve(
 int main(int argc, char *argv[])
 {
   struct pop Pop;
-  genoscore  Best;
+  genoscore  Best,  /* best function so far */
+             Tmp;   /* swap space for sorting/swapping */
   time_t     Start;
 
   /* sanity check */
@@ -152,8 +158,19 @@ int main(int argc, char *argv[])
   assert(Iface);
   assert(Iface_Handle);
   assert(Iface->opt.chromo_max > 0);
+  assert(Iface->opt.pop_keep < Iface->opt.pop_size && "wtf are you doing");
   assert(Iface->test.i.data.len > 0);
   genx_iface_dump(Iface);
+  printf("CHROMO_SIZE(%p)..%u\n", (void*)Iface, CHROMO_SIZE(Iface));
+  printf("sizeof(struct op)..%u\n", (unsigned)sizeof(struct op));
+  printf("sizeof chromosome..%u\n", (unsigned)(CHROMO_SIZE(Iface)*sizeof(struct op)));
+  printf("sizeof Pop.indiv[0]..%u\n", (unsigned)sizeof Pop.indiv[0]);
+
+  Best.geno.len = 0;
+  Best.geno.chromo = malloc(CHROMO_SIZE(Iface) * sizeof(struct op));
+
+  Tmp.geno.chromo = malloc(CHROMO_SIZE(Iface) * sizeof(struct op));
+
   x86_init();
   if (argc > 1) {
     Dump += 'd' == argv[1][1];
@@ -169,7 +186,7 @@ int main(int argc, char *argv[])
   Start = time(NULL);
   printf("Start=%lu\n", (unsigned long)Start);
 
-  evolve(&Best, &Pop, Iface, Start);
+  evolve(&Best, &Tmp, &Pop, Iface, Start);
 
   printf("done.\n");
   score(&Best, Iface, 1);

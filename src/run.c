@@ -114,7 +114,7 @@ static float score_f(const void *f, int verbose)
 
 #else /* integer */
 
-static inline u32 shim_i(const void *, u32, u32, u32); /* FIXME: i swear there's supposed to be a no-inline here... */
+static u32 shim_i(const void *, u32, u32, u32) __attribute__((noinline)); /* FIXME: i swear there's supposed to be a no-inline here... */
 static u32 popcnt(u32 n);
 
 /**
@@ -188,7 +188,7 @@ void score(genoscore *g, const genx_iface *iface, int verbose)
 /**
  * execute f(in); ensure no collateral damage
  */
-static inline u32 shim_i(const void *f, u32 x, u32 y, u32 z)
+static u32 shim_i(const void *f, u32 x, u32 y, u32 z)
 {
   volatile u32 out;
   __asm__ volatile(

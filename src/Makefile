@@ -13,7 +13,6 @@ OBJ = rnd.o x86.o gen.o run.o genx.o
 debug:
 	$(MAKE) "CFLAGS=$(CFLAGS) -O0" int
 
-
 fast:
 	$(MAKE) "CFLAGS=$(CFLAGS) -Os" int
 
