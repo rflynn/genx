@@ -18,19 +18,15 @@ fast:
 
 int:
 	$(MAKE) "CFLAGS=$(CFLAGS) -DX86_USE_INT" genx
+	$(MAKE) -C problems
 
 float:
 	$(MAKE) "CFLAGS=$(CFLAGS) -DX86_USE_FLOAT" genx
-
+	$(MAKE) -C problems
 
 genx: $(OBJ)
 
-rnd.o: rnd.h rnd.c
-x86.o: x86.h x86.c
-gen.o: gen.h gen.c
-run.o: run.h run.c typ.h
-genx.o: rnd.o x86.o gen.o
-
 clean:
+	$(MAKE) -C problems clean
 	$(RM) $(ALL) $(OBJ) cscope.out *.{gcov,gcda,gcno}
 

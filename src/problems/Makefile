@@ -4,12 +4,15 @@
 
 # -fprofile-arcs -ftest-coverage
 
-CFLAGS = -W -Wall -Wshadow -pedantic -std=gnu99 -g -m32 -I..
-LDFLAGS = -lm -m32
+override CFLAGS = -W -Wall -Wshadow -pedantic -std=gnu99 -g -m32 -I..
+override LDFLAGS = -lm -m32 -shared -fPIC
+ALL = int-sqrt.so
+
+all: $(ALL)
 
 int-sqrt.so: int-sqrt.o
-	$(CC) -o int-sqrt.so -shared -fPIC int-sqrt.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o int-sqrt.so int-sqrt.o
 
 clean:
-	$(RM) $(ALL) $(OBJ) cscope.out *.{gcov,gcda,gcno}
+	$(RM) $(ALL) cscope.out *.{gcov,gcda,gcno} *.so *.o
 
