@@ -4,14 +4,6 @@
 TODO
 -----------------------------------------------------------------------------
 
-
- * fix score() bug!!!!
-
-   the results of score() diff depending on who runs it(!)
-
-   this occurs sometimes but not always, and is almost certainly the fault
-   of the inline asm in the shim functions.
-
  * add support for the saving/retrieval of jobs, which will allow tasks to be
    resumed if the program crashes, and would even allow the transfer of jobs
    between machines.
@@ -29,18 +21,6 @@ TODO
 
         this shouldn't be too hard, too CPU-intensive or too complex, but
         it will get people more excited about using it.
-
- * fairly simple optimization
-  
-   when scoring a candidate, if score == WORST_POSSIBLE, then don't even
-   bother incrementing the index; write the contents of subseqent genotypes
-   in the same place, unless one scores better than the WORST_POSSIBLE.
-   in the case that no candidate genotype scores better than WORST then
-   we adopt the last candidate (though this won't exactly work if GEN_KEEP > 1...
-   so we should loop at least GEN_KEEP - 1 candidate before this optimization).
-   in any other case we wish to retain better scores and we discard WORST
-   scores anyways.
-   this takes advantage of CPU cache and should be significantly faster.
 
  * implement proper looping.
   
@@ -73,6 +53,22 @@ TODO
    try mutation of just a single instruction at a time, see if we get better
    results; I thought 
 
+ * allow multiple mutations per indiv
+   
+   currently we only do a single add/modify/delete; we need to allow for a
+   bit more variability; this would take "mutate_rate" into effect; perhaps
+   along with the chromosome length and a comparison to a random number to
+   continue mutation
+
+ * implement worker threads
+
+   this application is embarassingly parallel; allow for a configurable
+   number of worker threads to be launched for the purpose of mutating and
+   evaluating genotypes.
+
+   note that it's much more important to work smarter than faster; so improve
+   the algorithms before you do this(!)
+
  * implement some basic guidance for the function generation:
 
     * create an enumeration of all possible data storage destinations
@@ -86,15 +82,6 @@ TODO
     this will increase the cost of generating a single function, but i believe
     it will produce output of higher quality, and thus reduce the overall time
     wasted on functions which are complete garbage.
-
- * implement worker threads
-
-   this application is embarassingly parallel; allow for a configurable
-   number of worker threads to be launched for the purpose of mutating and
-   evaluating genotypes.
-
-   note that it's much more important to work smarter than faster; so improve
-   the algorithms before you do this(!)
 
  * implement a "simplify" function. this would identify effectless or redundant
    operations, such as performing some operations more than once in a row, and
