@@ -67,12 +67,13 @@ do_over:
 
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
-static void gen_mutate(genotype *g)
+static void gen_mutate(genotype *g, const double mutate_rate)
 {
   u32 ooff,
       olen,
       rlen,
-      suflen;
+      suflen,
+      addlen;
   s32 difflen;
 
 /*
@@ -264,13 +265,13 @@ void genoscore_copy(genoscore *dst, const genoscore *src)
 /**
  *
  */
-static void gen_gen(genotype *dst, const genotype *src)
+static void gen_gen(genotype *dst, const genotype *src, const double mutate_rate)
 {
   if (src) {
     /* mutate an existing genotype; by far the most common */
     gen_copy(dst, src);
     dst->len -= GEN_SUFFIX_LEN;
-    gen_mutate(dst);
+    gen_mutate(dst, mutate_rate);
   } else {
     /* initial generation or re-generation from scratch, far less common */
     /*
@@ -315,7 +316,7 @@ void pop_gen(struct pop *p, const u32 keep, const genx_iface *iface)
      */
     for (i = keep; i < iface->opt.pop_size; i++) {
       const genotype *src = &p->indiv[randr(0, keep-1)].geno;
-      gen_gen(&p->indiv[i].geno, src);
+      gen_gen(&p->indiv[i].geno, src, iface->opt.mutate_rate);
       GENOSCORE_SCORE(p->indiv+i) = GENOSCORE_WORST;
     }
   } else {
@@ -324,7 +325,7 @@ void pop_gen(struct pop *p, const u32 keep, const genx_iface *iface)
      * use a 'src' element
      */
     for (i = 0; i < iface->opt.pop_size; i++) {
-      gen_gen(&p->indiv[i].geno, NULL);
+      gen_gen(&p->indiv[i].geno, NULL, iface->opt.mutate_rate);
       GENOSCORE_SCORE(p->indiv+i) = GENOSCORE_WORST;
     }
   }

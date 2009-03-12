@@ -129,6 +129,7 @@ struct genx_iface {
     struct {
       enum scoretype score;
       u32 max_const;
+      int (*init)(void);
 	    u32 (*func)(const u32 []);
 	    int (*done)(const genoscore *);
 	    struct {

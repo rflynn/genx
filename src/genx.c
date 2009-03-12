@@ -116,7 +116,6 @@ static void evolve(
   const time_t      start)
 {
   u32 gencnt = 0;
-  /* TODO: call interface init function */
   GENOSCORE_SCORE(best) = GENOSCORE_WORST;
   best->geno.len = 0;
   pop_gen(pop, 0, iface);
@@ -128,7 +127,7 @@ static void evolve(
       u64 indivs = iface->opt.pop_size * (gencnt + 1);
       time_t t = time(NULL);
       printf("GENERATION %7" PRIu32 " %10" PRIu64 " genotypes (%.1fk/sec) @%s",
-        gencnt, indivs, (double)indivs / (t - start + 0.0001) / 1000., ctime(&t));
+        gencnt, indivs, (double)indivs / (t - start + 1.) / 1000., ctime(&t));
       if (progress) {
         genoscore_copy(best, &pop->indiv[0]);
         gen_dump(&best->geno, stdout);
@@ -148,14 +147,31 @@ int main(int argc, char *argv[])
   genoscore  Best,  /* best function so far */
              Tmp;   /* swap space for sorting/swapping */
   time_t     Start;
+  int        mod_idx = 1; /* argv[mod_idx] is name of module */
 
   /* sanity check */
   printf("sizeof Pop.indiv[0]=%lu\n", (unsigned long)(sizeof Pop.indiv[0]));
   printf("sizeof Pop=%lu\n", (unsigned long)(sizeof Pop));
   printf("FLT_EPSILON=%g\n", FLT_EPSILON);
 
+  if (argc > 1) {
+    if (0 == strcmp("-d", argv[1])) {
+      Dump = 1;
+    } else if (0 == strcmp("-D", argv[1])) {
+      Dump = 2;
+    }
+    mod_idx += !!Dump;
+  }
+
+  if (argc < mod_idx) {
+    printf("Usage: genx <module>\n"
+           "(where problems/<module>.%s exists)\n",
+           MODULE_EXTENSION);
+    exit(EXIT_FAILURE);
+  }
+
   /* initialization */
-  Iface = load_module("int-sqrt");
+  Iface = load_module(argv[mod_idx]);
   assert(Iface);
   assert(Iface_Handle);
   assert(Iface->opt.chromo_max > 0);
@@ -166,6 +182,17 @@ int main(int argc, char *argv[])
   printf("sizeof(struct op)..%u\n", (unsigned)sizeof(struct op));
   printf("sizeof chromosome..%u\n", (unsigned)(CHROMO_SIZE(Iface)*sizeof(struct op)));
   printf("sizeof Pop.indiv[0]..%u\n", (unsigned)sizeof Pop.indiv[0]);
+  /* call Iface init */
+  if (NULL != Iface->test.i.init) {
+    printf("Iface.init...");
+    fflush(stdout);
+    if (0 == (*Iface->test.i.init)()) {
+      printf("failed!\n");
+      exit(EXIT_FAILURE);
+    } else {
+      printf("OK\n");
+    }
+  }
 
   Best.geno.len = 0;
   Best.geno.chromo = malloc(CHROMO_SIZE(Iface) * sizeof(struct op));
@@ -173,12 +200,7 @@ int main(int argc, char *argv[])
   Tmp.geno.chromo = malloc(CHROMO_SIZE(Iface) * sizeof(struct op));
   x86_init();
   run_init();
-  if (argc > 1) {
-    Dump += 'd' == argv[1][1];
-    Dump += (2 * ('D' == argv[1][1]));
-  }
   rnd32_init((u32)time(NULL));
-  setvbuf(stdout, (char *)NULL, _IONBF, 0); /* unbuffer stdout */
   randr_test();
 #ifndef WIN32
   nice(+19); /* be as polite to any other programs as possible */
