@@ -38,10 +38,8 @@ typedef uint64_t u64;
  */
 #ifdef WIN32
 # define EXPORT  __declspec(dllexport)
-# define MODULE_EXTENSION ".dll"
 #else
 # define EXPORT
-# define MODULE_EXTENSION ".so"
 #endif
 
 /*

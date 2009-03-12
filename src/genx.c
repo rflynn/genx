@@ -25,41 +25,13 @@
 #include "gen.h"
 #include "run.h"
 
-/******************* BEGIN INPUT PART *****************************/
-
-#if 0
-/*
- * target input -> output data
- * this is what we test against
- */
-  /*
-   * age, co2, temp data recorded from ice cores by
-   * the Vostok Antarctic research station
-   * @ref ftp://cdiac.ornl.gov/pub/trends/co2/vostok.icecore.co2
-   * @ref http://cdiac.esd.ornl.gov/ftp/trends/temp/vostok/vostok.1999.temp.dat
-   */
-  /* air        co2            temp
-   * age        ppmv           var (C) */
-  {{   2342.f,  284.7f, 0.f }, -0.98f },
-  {{  50610.f,  189.3f, 0.f }, -5.57f },
-  {{ 103733.f,  225.9f, 0.f }, -4.50f },
-  {{ 151234.f,  197.0f, 0.f }, -6.91f },
-  {{ 201324.f,  226.4f, 0.f }, -1.49f },
-  {{ 401423.f,  277.1f, 0.f }, -1.09f },
-
-/********************* END INPUT PART *****************************/
-#endif
-
 int Dump = 0; /* verbosity level */
 
 static void *Iface_Handle = NULL;
 struct genx_iface *Iface = NULL;
 
-static struct genx_iface * load_module(const char *name)
+static struct genx_iface * load_module(const char *path)
 {
-  char path[512];
-  snprintf(path, sizeof path, "%s%s%s", "problems/", name, MODULE_EXTENSION);
-  printf("module '%s' -> '%s'\n", name, path);
   errno = 0;
   Iface_Handle = dlopen(path, RTLD_NOW);
   if (NULL == Iface_Handle) {
@@ -150,9 +122,7 @@ int main(int argc, char *argv[])
   int        mod_idx = 1; /* argv[mod_idx] is name of module */
 
   if (argc <= mod_idx) {
-    printf("Usage: genx <module>\n"
-           "(where problems/<module>%s exists)\n",
-           MODULE_EXTENSION);
+    printf("Usage: genx path/to/module\n");
     exit(EXIT_FAILURE);
   }
 
