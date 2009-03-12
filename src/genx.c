@@ -127,8 +127,8 @@ static void evolve(
     if (progress || 0 == gencnt % 1000) { /* display generation regularly or on progress */
       u64 indivs = iface->opt.pop_size * (gencnt + 1);
       time_t t = time(NULL);
-      printf("GENERATION %7" PRIu32 " %10" PRIu64 " genotypes (%.1f/sec) @%s",
-        gencnt, indivs, (double)indivs / (t - start + 0.0001), ctime(&t));
+      printf("GENERATION %7" PRIu32 " %10" PRIu64 " genotypes (%.1fk/sec) @%s",
+        gencnt, indivs, (double)indivs / (t - start + 0.0001) / 1000., ctime(&t));
       if (progress) {
         genoscore_copy(best, &pop->indiv[0]);
         gen_dump(&best->geno, stdout);
@@ -138,7 +138,8 @@ static void evolve(
     }
     pop_gen(pop, iface->opt.pop_keep, iface);
     gencnt++;
-  } while (!(*iface->test.i.done)(best));
+  } while (!(*iface->test.i.done)(best)
+  );
 }
 
 int main(int argc, char *argv[])
@@ -170,8 +171,8 @@ int main(int argc, char *argv[])
   Best.geno.chromo = malloc(CHROMO_SIZE(Iface) * sizeof(struct op));
 
   Tmp.geno.chromo = malloc(CHROMO_SIZE(Iface) * sizeof(struct op));
-
   x86_init();
+  run_init();
   if (argc > 1) {
     Dump += 'd' == argv[1][1];
     Dump += (2 * ('D' == argv[1][1]));

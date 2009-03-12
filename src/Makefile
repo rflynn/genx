@@ -4,8 +4,8 @@
 
 # -fprofile-arcs -ftest-coverage
 
-CFLAGS = -W -Wall -Wshadow -pedantic -std=gnu99 -g -m32
-LDFLAGS = -lm -m32 -ldl
+CFLAGS = -W -Wall -Wshadow -pedantic -std=gnu99 -ggdb -m32
+LDFLAGS = -lm -m32 -ldl -ggdb
 BIN = genx
 ALL = genx
 OBJ = rnd.o x86.o gen.o run.o genx.o

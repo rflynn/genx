@@ -13,6 +13,11 @@
 #include <float.h>
 #include <math.h>
 #include <limits.h>
+#ifdef linux
+# include <sys/mman.h> /* mmap */
+# include <sys/types.h>
+# include <fcntl.h>
+#endif
 #include "typ.h"
 #include "x86.h"
 #include "run.h"
@@ -114,8 +119,29 @@ static float score_f(const void *f, int verbose)
 
 #else /* integer */
 
-static u32 shim_i(const void *, u32, u32, u32) __attribute__((noinline)); /* FIXME: i swear there's supposed to be a no-inline here... */
+static u32 shim_i(const void *, u32, u32, u32) NOINLINE;
 static u32 popcnt(u32 n);
+
+static u8 *x86;
+#ifdef linux
+static int x86fd;
+#endif
+
+void run_init(void)
+{
+#ifdef linux
+  x86fd = open("/dev/zero", O_RDONLY);
+  x86 = mmap(NULL, 4096, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE, x86fd, 0);
+  if (MAP_FAILED == x86) {
+    perror("mmap");
+    abort();
+  }
+#else
+  x86 = malloc(4096);
+  assert(NULL != x86);
+#endif
+  printf("x86=%p\n", (void *)x86);
+}
 
 /**
  * given a candidate function, test it against all input and return a
@@ -124,11 +150,10 @@ static u32 popcnt(u32 n);
  */
 void score(genoscore *g, const genx_iface *iface, int verbose)
 {
-  static u8 x86[1024];
   volatile u32 scor = 0, i;
   u32 targetsum = 0,
       testcnt,
-      x86len = gen_compile(&g->geno, x86, sizeof x86);
+      x86len = gen_compile(&g->geno, x86, 4096);
   if (Dump > 0)
     x86_dump(x86, x86len, stdout);
   if (Dump > 1)
@@ -208,20 +233,10 @@ static u32 shim_i(const void *f, u32 x, u32 y, u32 z)
     "pushq %%rdi;"
     "pushq %%rsi;"
 #else
-    "push %%ebx;"
-    "push %%ecx;"
-    "push %%edx;"
-    "push %%edi;"
     "push %%esi;"
 #endif
     /* pass in parameters */
-    "movl %4,0x8(%%esp);"
-    "movl %3,0x4(%%esp);"
-    "movl %2,   (%%esp);"
     /* zero regs */
-    "xor  %%eax, %%eax;"
-    "xor  %%ebx, %%ebx;"
-    "xor  %%ecx, %%ecx;"
     "xor  %%edx, %%edx;"
     "xor  %%edi, %%edi;"
     "xor  %%esi, %%esi;"
@@ -235,13 +250,9 @@ static u32 shim_i(const void *f, u32 x, u32 y, u32 z)
     "popq %%rbx;"
 #else
     "pop  %%esi;"
-    "pop  %%edi;"
-    "pop  %%edx;"
-    "pop  %%ecx;"
-    "pop  %%ebx;"
 #endif
     : "=a"(out)
-    : "m"(f), "c"(x), "d"(y), "D"(z));
+    : "m"(f), "a"(x), "b"(y), "c"(z));
   return out;
 }
 

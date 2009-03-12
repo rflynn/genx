@@ -284,18 +284,24 @@ static void gen_gen(genotype *dst, const genotype *src)
     chromo_random(dst, GEN_PREFIX_LEN, 1);
   }
 
+#ifdef DEBUG
     const genotype *g = dst;
     assert(g->len > GEN_PREFIX_LEN);
+#endif
 
   GEN_SUFFIX(dst);
 
+#ifdef DEBUG
     assert(g->len > GEN_PREFIX_LEN + GEN_SUFFIX_LEN);
     assert(g->chromo[0].x86 == ENTER);
+#if 0
     assert(g->chromo[1].x86 == MOV_8_EBP_EAX);
     assert(g->chromo[2].x86 == MOV_C_EBP_EBX);
     assert(g->chromo[3].x86 == MOV_10_EBP_ECX);
+#endif
     assert(g->chromo[g->len - 2].x86 == LEAVE);
     assert(g->chromo[g->len - 1].x86 == RET);
+#endif
 
 }
 

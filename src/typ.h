@@ -45,6 +45,15 @@ typedef uint64_t u64;
 #endif
 
 /*
+ * force shim functions to not be inlined; inling them breaks OS X
+ */
+#ifdef __GNUC__
+# define NOINLINE __attribute__((noinline))
+#else
+# define NOINLINE
+#endif
+
+/*
  *  
  */
 #ifdef X86_USE_FLOAT

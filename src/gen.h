@@ -32,13 +32,18 @@
     (g)->chromo[2].x86 = SUB_14_ESP;    \
   } while (0)
 #else
-# define GEN_PREFIX_LEN 4
+# define GEN_PREFIX_LEN 1
 # define GEN_PREFIX(g) do {             \
     (g)->chromo[0].x86 = ENTER;         \
+  } while (0)
+#endif
+
+#if 0
+
     (g)->chromo[1].x86 = MOV_8_EBP_EAX; \
     (g)->chromo[2].x86 = MOV_C_EBP_EBX; \
     (g)->chromo[3].x86 = MOV_10_EBP_ECX;\
-  } while (0)
+
 #endif
 
 /*
