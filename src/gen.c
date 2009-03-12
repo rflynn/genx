@@ -339,7 +339,6 @@ void gen_dump(const struct genotype *g, FILE *f)
   char hex[24],
        *h;
   u32 i, j;
-  printf("g->len=%" PRIu32 " g->chromo=%p\n", g->len, (void *)g->chromo);
   for (i = 0; i < g->len; i++) {
     const struct x86 *x = X86 + g->chromo[i].x86;
     h = hex;

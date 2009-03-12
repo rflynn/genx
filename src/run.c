@@ -202,7 +202,7 @@ void score(genoscore *g, const genx_iface *iface, int verbose)
   if (verbose || Dump >= 2) {
     printf("score=%" PRIu32 "/%" PRIu32 " (%.7f%%)\n",
       scor, targetsum,
-      ((double)scor / (double)targetsum) * 100.);
+      100. - (((double)scor / (double)targetsum) * 100.));
   }
   g->score.i = scor;
 }

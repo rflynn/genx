@@ -124,7 +124,7 @@ static void evolve(
     pop_score(pop, iface, tmp);
     progress = -1 == genoscore_lencmp(pop->indiv, best);
     if (progress || 0 == gencnt % 1000) { /* display generation regularly or on progress */
-      u64 indivs = iface->opt.pop_size * (gencnt + 1);
+      u64 indivs = (u64)iface->opt.pop_size * (u64)(gencnt + 1);
       time_t t = time(NULL);
       printf("GENERATION %7" PRIu32 " %10" PRIu64 " genotypes (%.1fk/sec) @%s",
         gencnt, indivs, (double)indivs / (t - start + 1.) / 1000., ctime(&t));
@@ -149,6 +149,13 @@ int main(int argc, char *argv[])
   time_t     Start;
   int        mod_idx = 1; /* argv[mod_idx] is name of module */
 
+  if (argc <= mod_idx) {
+    printf("Usage: genx <module>\n"
+           "(where problems/<module>%s exists)\n",
+           MODULE_EXTENSION);
+    exit(EXIT_FAILURE);
+  }
+
   /* sanity check */
   printf("sizeof Pop.indiv[0]=%lu\n", (unsigned long)(sizeof Pop.indiv[0]));
   printf("sizeof Pop=%lu\n", (unsigned long)(sizeof Pop));
@@ -161,13 +168,6 @@ int main(int argc, char *argv[])
       Dump = 2;
     }
     mod_idx += !!Dump;
-  }
-
-  if (argc < mod_idx) {
-    printf("Usage: genx <module>\n"
-           "(where problems/<module>.%s exists)\n",
-           MODULE_EXTENSION);
-    exit(EXIT_FAILURE);
   }
 
   /* initialization */
