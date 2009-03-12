@@ -123,21 +123,18 @@ static u32 shim_i(const void *, u32, u32, u32) NOINLINE;
 static u32 popcnt(u32 n);
 
 static u8 *x86;
-#ifdef linux
-static int x86fd;
-#endif
+#define X86_BUFLEN 4096
 
 void run_init(void)
 {
 #ifdef linux
-  x86fd = open("/dev/zero", O_RDONLY);
-  x86 = mmap(NULL, 4096, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE, x86fd, 0);
+  x86 = mmap(0, X86_BUFLEN, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
   if (MAP_FAILED == x86) {
     perror("mmap");
     abort();
   }
 #else
-  x86 = malloc(4096);
+  x86 = malloc(X86_BUFLEN);
   assert(NULL != x86);
 #endif
   printf("x86=%p\n", (void *)x86);
@@ -153,7 +150,7 @@ void score(genoscore *g, const genx_iface *iface, int verbose)
   volatile u32 scor = 0, i;
   u32 targetsum = 0,
       testcnt,
-      x86len = gen_compile(&g->geno, x86, 4096);
+      x86len = gen_compile(&g->geno, x86, X86_BUFLEN);
   if (Dump > 0)
     x86_dump(x86, x86len, stdout);
   if (Dump > 1)
