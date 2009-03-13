@@ -1,7 +1,7 @@
 /* ex: set ff=dos ts=2 et: */
 /* $Id$ */
 /*
- * prototype module
+ * the last 4 digits of a perfect square must be 0, 1, 4, or 9
  */
 
 #include <stdio.h>
@@ -9,24 +9,30 @@
 #include "typ.h"
 #include "gen.h"
 
+static int init(void);
 static u32 func(const u32 []);
 static int done(const genoscore *);
 
-static const struct {
+static struct {
   u32 in[4],
       out;
 } Test[] = {
-  { { 0xFFFFFFFF }, 0x10000 },
-  { {  0xFFFFFFF },  0x3fff },
-  { {  0x1000000 },  0x1000 },
-  { {      10000 },     100 },
-  { {       2500 },      50 },
-  { {        100 },      10 },
-  { {          9 },       3 },
-  { {          4 },       2 },
-  { {          2 },       1 },
-  { {          1 },       1 },
-  { {          0 },       0 },
+  {{  0 }, 1 },
+  {{  1 }, 1 },
+  {{  2 }, 0 },
+  {{  3 }, 0 },
+  {{  4 }, 1 },
+  {{  5 }, 0 },
+  {{  6 }, 0 },
+  {{  7 }, 0 },
+  {{  8 }, 0 },
+  {{  9 }, 1 },
+  {{ 10 }, 0 },
+  {{ 11 }, 0 },
+  {{ 12 }, 0 },
+  {{ 13 }, 0 },
+  {{ 14 }, 0 },
+  {{ 15 }, 0 }
 };
 
 static const struct genx_iface Iface = {
@@ -69,7 +75,10 @@ EXPORT const struct genx_iface * load(void)
 
 static u32 func(const u32 x[])
 {
-  return (s32)sqrt(x[0]);
+  return x[0] == 0
+      || x[0] == 1
+      || x[0] == 4
+      || x[0] == 9;
 }
 
 static int done(const genoscore *best)

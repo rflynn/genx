@@ -202,7 +202,7 @@ void score(genoscore *g, const genx_iface *iface, int verbose)
   if (verbose || Dump >= 2) {
     printf("score=%" PRIu32 "/%" PRIu32 " (%.7f%%)\n",
       scor, targetsum,
-      ((double)scor / (double)targetsum) * 100.);
+      100. - (((double)scor / (double)targetsum) * 100.));
   }
   g->score.i = scor;
 }
@@ -218,18 +218,14 @@ static u32 shim_i(const void *f, u32 x, u32 y, u32 z)
      * zero all registers to ensure candidate
      * function doesn't have access to anything
      * but zeroes
-     *
-     * NOTE: Apple doesn't like when i clobber
-     * the ebx register, so we'll just push and
-     * pop it manually...
      */
 #ifdef __x86_64__
-    "pushq %%rbx;"
-    "pushq %%rcx;"
     "pushq %%rdx;"
     "pushq %%rdi;"
     "pushq %%rsi;"
 #else
+    "push %%edx;"
+    "push %%edi;"
     "push %%esi;"
 #endif
     /* pass in parameters */
@@ -243,10 +239,10 @@ static u32 shim_i(const void *f, u32 x, u32 y, u32 z)
     "popq %%rsi;"
     "popq %%rdi;"
     "popq %%rdx;"
-    "popq %%rcx;"
-    "popq %%rbx;"
 #else
     "pop  %%esi;"
+    "pop  %%edi;"
+    "pop  %%edx;"
 #endif
     : "=a"(out)
     : "m"(f), "a"(x), "b"(y), "c"(z));
