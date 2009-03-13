@@ -72,8 +72,7 @@ static void gen_mutate(genotype *g, const double mutate_rate)
   u32 ooff,
       olen,
       rlen,
-      suflen,
-      addlen;
+      suflen;
   s32 difflen;
 
 /*
@@ -420,20 +419,24 @@ static s32 gen_jmp_pos(const genotype *g, const u32 off, u32 rel, u32 idx)
   u32 total = 0,
       i;
   s32 res;
+#if DEBUG
   assert(idx < g->len);
   assert(idx >= GEN_PREFIX_LEN);
+#endif
   if (idx == g->len - 1)
     return 0;
   rel = idx + 1 + (rel % (g->len - idx - 2));
+#if DEBUG
   assert(rel < Iface->opt.chromo_max + GEN_PREFIX_LEN + GEN_SUFFIX_LEN);
+#endif
   for (i = 0; i < rel; i++)
     total += chromo_bytes(g->chromo + i);
   res = (s32)(total - off); /* calculate byte offset */
   if (res < 0) /* can't go back, no matter what */
     res = 0;
-
+#if DEBUG
   assert(res >= 0);
-
+#endif
   return res;
 }
 
@@ -442,7 +445,9 @@ u32 gen_compile(genotype *g, u8 *buf, size_t buflen)
   u32 i,
       len = 0;
   for (i = 0; i < g->len; i++) {
+#if DEBUG
     assert(g->chromo[i].x86 < X86_COUNT);
+#endif
     if (X86[g->chromo[i].x86].jcc) {
       /* if relative jump, adjust the random jump destination to a valid offset */
       *(s32*)&g->chromo[i].data =
@@ -451,6 +456,7 @@ u32 gen_compile(genotype *g, u8 *buf, size_t buflen)
     }
     len = chromo_add(g->chromo + i, buf, len);
   }
+  assert(i < buflen);
   return len;
 }
 
@@ -563,7 +569,6 @@ static int gen_load(FILE *f, genotype *g)
   return 1;
 }
 #endif
-
 
 #if 0
 static void test_load(void)

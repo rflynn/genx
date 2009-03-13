@@ -9,7 +9,6 @@
 #include "typ.h"
 #include "gen.h"
 
-static int init(void);
 static u32 func(const u32 []);
 static int done(const genoscore *);
 
