@@ -1,36 +1,22 @@
 # ex: set ff=dos ts=2 et:
 # $Id$
 
-git clone git://github.com/pizza/genx.git ~/genx && cd ~/genx/src && make && ./genx
+git clone git://github.com/pizza/genx.git ~/genx && cd ~/genx/src && make && ./genx problems/int-sqrt.so
 
- o=O   
-0===0  genx searches for functions via a genetic algorithm, creating them
-0===0  randomly from x86 machine language. The "fittest" ones are retained
- O=o   and mutated. Over time, better and better functions evolve.
-  O    
- o=O   Why is this interesting?
-0===0  
-0===0  - Discover Unknown/Unexpected Relationships
- O=o     Given input and output data, genx can search for the simplest
-  O      relationship between them.
- o=O   
-0===0  - Automated Optimization
-0===0    Given input and an existing function, genx can try to find simpler,
- O=o     more efficient equivalences.
-  O    
- o=O   - It's Fast
-0===0    Because the functions are expressed in native x86 they can be
-0===0    executed by the CPU directly, allowing even my modest old laptop to
- O=o     process millions of candidates per minute. 
-  O    
- o=O   Requirements
-0===0     x86 processor, make, gcc
-0===0  
- O=o   Build
-  O      make
- o=O   
-0===0  Run 
-0===0    cd src && ./genx
+ o=O   genx builds functions
+0===0  mutating, testing fitness
+0===0  program is data
  O=o   
-  O    Enjoy
+  O    why interesting?
+ o=O   genetic algorithm
+0===0  grow better output
+0===0  
+ O=o   needs x86,
+  O    make, cc; builds on unix
+ o=O   maybe on windows
+0===0  
+0===0  cd src && make
+ O=o   run ./genx with module
+  O    virtuous patience
  o=O   
+
