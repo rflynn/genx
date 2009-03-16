@@ -216,6 +216,22 @@ enum {
 
   LEA_8EBP_EAX,
 
+  SETA,
+  SETAE,
+  SETB,
+  SETBE,
+  SETE,
+  SETG,
+  SETGE,
+  SETL,
+  SETLE,
+  SETNE,
+  SETNS,
+  SETO,
+  SETP,
+  SETPO,
+  SETS,
+
 #ifdef X86_USE_FLOAT
 #ifndef X86_FIRST
 # define X86_FIRST LEA_8EBP_EAX
