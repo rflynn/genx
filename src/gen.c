@@ -67,7 +67,7 @@ do_over:
 
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
-static void gen_mutate(genotype *g, const double mutate_rate)
+static void gen_mutate(genotype *g)
 {
   u32 ooff,
       olen,
@@ -270,7 +270,9 @@ static void gen_gen(genotype *dst, const genotype *src, const double mutate_rate
     /* mutate an existing genotype; by far the most common */
     gen_copy(dst, src);
     dst->len -= GEN_SUFFIX_LEN;
-    gen_mutate(dst, mutate_rate);
+    do
+      gen_mutate(dst);
+    while (mutate_rate >= rand01());
   } else {
     /* initial generation or re-generation from scratch, far less common */
     /*

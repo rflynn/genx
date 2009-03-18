@@ -80,6 +80,9 @@ static void pop_init(struct pop *p, const genx_iface *iface)
   assert(p->scores);
 }
 
+/**
+ * 
+ */
 static void evolve(
         genoscore  *best,
         genoscore  *tmp,

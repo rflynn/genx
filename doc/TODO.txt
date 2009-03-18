@@ -22,6 +22,27 @@ TODO
         this shouldn't be too hard, too CPU-intensive or too complex, but
         it will get people more excited about using it.
 
+ * decent mutation dead-end algorithm
+
+   if no progress is made in some relative time, save the current best to a
+   file and start over; maintain a pool of "best" solutions;
+
+   do not allow pool to grow too large; maintain only the N best solutions
+   for a given problem and delete others as better ones are found;
+
+   also, perhaps try and mutate the best solutions together
+
+ * allow multiple mutations per indiv
+   
+   currently we only do a single add/modify/delete; we need to allow for a
+   bit more variability; this would take "mutate_rate" into effect; perhaps
+   along with the chromosome length and a comparison to a random number to
+   continue mutation
+
+ * find better test problems
+
+   current problems already have good known solutions
+
  * implement proper looping.
   
    so far the only sort of branching we have are conditional moves
@@ -52,13 +73,6 @@ TODO
 
    try mutation of just a single instruction at a time, see if we get better
    results; I thought 
-
- * allow multiple mutations per indiv
-   
-   currently we only do a single add/modify/delete; we need to allow for a
-   bit more variability; this would take "mutate_rate" into effect; perhaps
-   along with the chromosome length and a comparison to a random number to
-   continue mutation
 
  * implement worker threads
 
