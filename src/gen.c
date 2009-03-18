@@ -272,7 +272,7 @@ static void gen_gen(genotype *dst, const genotype *src, const double mutate_rate
     dst->len -= GEN_SUFFIX_LEN;
     do
       gen_mutate(dst);
-    while (mutate_rate >= rand01());
+    while (mutate_rate <= rand01());
   } else {
     /* initial generation or re-generation from scratch, far less common */
     /*
