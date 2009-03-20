@@ -61,23 +61,61 @@ static void * unload_module(void *handle)
  */
 static void pop_init(struct pop *p, const genx_iface *iface)
 {
+  size_t bytes_indivs,
+         bytes_chromo_each,
+         bytes_chromo_all,
+         bytes_scores;
   p->len = iface->opt.pop_size;
-  p->indiv = malloc(p->len * sizeof p->indiv[0]);
+  bytes_indivs = sizeof p->indiv[0] * p->len;
+  p->indiv = malloc(bytes_indivs);
   assert(p->indiv != NULL);
+  bytes_chromo_each = CHROMO_SIZE(iface) * sizeof(struct op);
+  bytes_chromo_all = bytes_chromo_each * p->len;
   p->indiv[0].geno.len = 0;
   /* enough space for all chromosomes for entire pop to [0] */
-  p->indiv[0].geno.chromo = malloc(p->len *
-    (CHROMO_SIZE(iface) * sizeof(struct op)));
+  p->indiv[0].geno.chromo = malloc(bytes_chromo_all);
   assert(p->indiv[0].geno.chromo && "Use smaller pop_size, fewer chromo_max or buy more RAM");
   /* initialize all indivs */
   for (u32 i = 1; i < p->len; i++) {
     p->indiv[i].geno.len = 0;
     /* assign each individual a slice of the whole contiguous memory vector */
     p->indiv[i].geno.chromo = p->indiv[i-1].geno.chromo + CHROMO_SIZE(iface);
-    //p->indiv[i].geno.chromo = malloc(CHROMO_SIZE(iface) * sizeof(struct op));
   }
-  p->scores = malloc(iface->opt.pop_size * sizeof *p->scores);
+  bytes_scores = iface->opt.pop_size * sizeof *p->scores;
+  p->scores = malloc(bytes_scores);
   assert(p->scores);
+}
+
+/**
+ * format a u64 into a comma-separated string representation of that number, i.e.
+ * 1 -> 1
+ * 12 -> 12
+ * 123 -> 123
+ * 1234 -> 1,234
+ * 12345 -> 12,345
+ * 123456 -> 123,456
+ * 1234567 -> 1,234,567
+ */
+static void commafy(char *dst, size_t dstlen, const char *fmt, const u64 n)
+{
+  static char srcbuf[64];
+  char       *src = srcbuf;
+  int         srclen;
+  int         prefix;   /* number of digits before first comma */
+  unsigned    off = 0;  /* track src offset */
+  srclen = snprintf(srcbuf, sizeof srcbuf, fmt, n);
+  prefix = srclen % 3;
+  if (prefix > 0) {
+    off = snprintf(dst, dstlen, "%.*s,", prefix, src);
+    src += prefix;
+  }
+  /* write each set of 3 digits + "," */
+  while (off + 4 < dstlen && *src) {
+    off += snprintf(dst+off, dstlen-off, "%.*s,", 3, src);
+    src += 3;
+  }
+  /* chop off last comma, if we've written anything at all */
+  dst[off - (off > 0)] = '\0';
 }
 
 /**
@@ -99,10 +137,13 @@ static void evolve(
     pop_score(pop, iface, tmp);
     progress = -1 == genoscore_lencmp(pop->indiv, best);
     if (progress || 0 == gencnt % 1000) { /* display generation regularly or on progress */
+      char indivbuf[32];
       u64 indivs = (u64)iface->opt.pop_size * (u64)(gencnt + 1);
       time_t t = time(NULL);
-      printf("GENERATION %7" PRIu32 " %10" PRIu64 " genotypes (%.1fk/sec) @%s",
-        gencnt, indivs, (double)indivs / (t - start + 1.) / 1000., ctime(&t));
+      double rate = (double)indivs / (t - start + 1.) / 1000.;
+      commafy(indivbuf, sizeof indivbuf, "%llu", indivs);
+      printf("GEN %7" PRIu32 " %15s genotypes (%.1fk/sec) @%s",
+        gencnt, indivbuf, rate, ctime(&t));
       if (progress) {
         genoscore_copy(best, &pop->indiv[0]);
         gen_dump(&best->geno, stdout);
