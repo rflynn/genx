@@ -17,7 +17,8 @@
 #include "x86.h"
 #include "run.h"
 
-extern const struct x86 X86[X86_COUNT];
+extern const struct x86 X86[X86_CNT];
+extern u32 X86_COUNT;
 extern int Dump;
 extern struct genx_iface *Iface;
 
@@ -469,11 +470,15 @@ int genoscore_lencmp(const void *va, const void *vb)
 {
   register const genoscore *a = va,
                            *b = vb;
-  register int cmp = (GENOSCORE_SCORE(a) > GENOSCORE_SCORE(b))
-                   - (GENOSCORE_SCORE(a) < GENOSCORE_SCORE(b));
-  if (0 == cmp)
-    cmp = (a->geno.len > b->geno.len) - (a->geno.len < b->geno.len);
-  return cmp;
+  if (GENOSCORE_SCORE(a) > GENOSCORE_SCORE(b))
+    return 1;
+  else if (GENOSCORE_SCORE(a) < GENOSCORE_SCORE(b))
+    return -1;
+  else if (a->geno.len > b->geno.len)
+    return 1;
+  else if (a->geno.len < b->geno.len)
+    return -1;
+  return 0;
 }
 
 /**
@@ -501,12 +506,87 @@ inline static void genoscore_swap(genoscore *a, genoscore *b, genoscore *tmp)
   genoscore_copy(b,   tmp);
 }
 
-void pop_score(struct pop *p, const genx_iface *iface, genoscore *tmp)
+inline static void score_id_swap(score_id *a, score_id *b, score_id *tmp)
 {
-  u32 w = 0;
-  for (u32 i = 0; i < iface->opt.pop_size; i++) {
+  *tmp = *a;
+  *a = *b;
+  *b = *tmp;
+}
+
+/**
+ * sort the population so that p->indiv[0..pop_keep-1] are the pop_keep best
+ * individuals.
+ * the state of all other indivs is of no consequence, so we're free to
+ * trash them if we wish.
+ * @param p        population of individuals and their scores
+ * @param pop_keep number of top individuals to indentify and sort at the beginning of p->indiv
+ * @param wcnt     the number of individuals scored
+ */
+static void pop_keep_reloc(
+  struct pop *p,
+  const u32   pop_keep,
+  const u32   wcnt,
+  genoscore  *gtmp)
+{
+  score_id stmp;
+  /*
+   * because pop_keep will be a small number, we can avoid all the
+   * overhead of a full sort and just scan the population for the
+   * pop_keep best scores; even though scanning the vector will
+   * be bad for cache performance it will result in much less
+   * writing to memory and may be a significant improvement
+   */
+  /* for each item in 0..pop_keep */
+  for (u32 i = 0; i < pop_keep; i++) {
+    u32      best = i,        /* best known index; start off with i'th */
+             j    = best + 1; /* index to start scanning */
+    /* find the highest score left */
+    while (j < wcnt) {
+      if (-1 == score_id_lencmp(p->scores+j, p->scores+best))
+        best = j;
+      j++;
+    }
+    /* move the highest score to the i'th index (front) */
+    score_id_swap(p->scores+i, p->scores+best, &stmp);
+  }
+  /* the scores have been ordered; rearrange genoscores to matching order */
+  for (u32 i = 0; i < pop_keep; i++) {
+    genoscore_swap(p->indiv + i,
+                   p->indiv + p->scores[i].id,
+                   gtmp);
+  }
+}
+
+void pop_score(struct pop *p, const genoscore *best, const genx_iface *iface, genoscore *gtmp)
+{
+  genoscore faux_best;
+  u32 i = 0,
+      w = 0;
+  GENOSCORE_SCORE(&faux_best) = GENOSCORE_SCORE(best) + 10;
+  faux_best.geno.len = best->geno.len;
+  /*
+   * we must always include at least pop_keep results
+   */
+  for (; i < iface->opt.pop_keep; i++) {
     score(p->indiv + i, iface, 0);
-    if (GENOSCORE_NOT_WORST(p->indiv+i) || i < iface->opt.pop_keep) {
+    p->scores[w].score = p->indiv[i].score;
+    p->scores[w].len = p->indiv[i].geno.len;
+    p->scores[w].id = i;
+    w++;
+  }
+
+  for (; i < iface->opt.pop_size; i++) {
+    score(p->indiv + i, iface, 0);
+    /*
+     * our goal here is to keep 'w' as low as possible without dropping
+     * any best candidates.
+     * this is a pre-filtering where we try and reduce the number scores
+     * we write and consider in pop_keep_reloc() by using a generic
+     * hueristic that will be valid for both int and float tests of any kind
+     * and also for any number of .pop_keep values
+     */
+    if (GENOSCORE_NOT_WORST(p->indiv+i)) {
+    //if (1 == genoscore_lencmp(&faux_best, p->indiv+i)) {
       /*
        * only count scores that are better than worst; since
        * the vast majority will be == WORST possible.
@@ -520,13 +600,7 @@ void pop_score(struct pop *p, const genx_iface *iface, genoscore *tmp)
       w++;
     }
   }
-  qsort(p->scores, w, sizeof *p->scores, score_id_lencmp);
-  /* copy the best pop_keep items to the front */
-  for (u32 i = 0; i < iface->opt.pop_keep; i++) {
-    genoscore_swap(p->indiv + i,
-                   p->indiv + p->scores[i].id,
-                   tmp);
-  }
+  pop_keep_reloc(p, iface->opt.pop_keep, w, gtmp);
 }
 
 #if 0

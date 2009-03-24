@@ -134,7 +134,7 @@ static void evolve(
   pop_gen(pop, 0, iface);
   do {
     int progress;
-    pop_score(pop, iface, tmp);
+    pop_score(pop, best, iface, tmp);
     progress = -1 == genoscore_lencmp(pop->indiv, best);
     if (progress || 0 == gencnt % 1000) { /* display generation regularly or on progress */
       char indivbuf[32];
@@ -153,8 +153,7 @@ static void evolve(
     }
     pop_gen(pop, iface->opt.pop_keep, iface);
     gencnt++;
-  } while (!(*iface->test.i.done)(best)
-  );
+  } while (!(*iface->test.i.done)(best));
 }
 
 int main(int argc, char *argv[])
@@ -212,7 +211,7 @@ int main(int argc, char *argv[])
   Best.geno.chromo = malloc(CHROMO_SIZE(Iface) * sizeof(struct op));
 
   Tmp.geno.chromo = malloc(CHROMO_SIZE(Iface) * sizeof(struct op));
-  x86_init();
+  x86_init(Iface);
   run_init();
   rnd32_init((u32)time(NULL));
   randr_test();

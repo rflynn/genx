@@ -21,7 +21,7 @@
 #include "typ.h"
 #include "gen.h"
 
-void         x86_init(void);
+void         x86_init(const genx_iface *);
 u8           gen_modrm(u8 digit);
 const char * disp_modrm(u8 n, const u8 modrm, char *buf, size_t len);
 void         x86_dump(const u8 *x86, u32 len, FILE *f);
@@ -84,17 +84,17 @@ enum istor {
 };
 
 struct x86 {
-  const char *descr;  /* printf-friendly format, which
-                       * displays the 'rest' bytes (if any) */
-  const u8 op[4],     /* instruction bytes                  */
-           oplen,     /* length of instruction op, the  */
-           modrmlen,
-           modrm,     /* /n digit for some operations       */
-           immlen;    /* number of variable bytes           */
-  u8        jcc;      /* is it a conditional jump instr?    */
-  enum iset set;
-  enum iflt flt;
-  enum ialg alg;
+  const char *descr;    /* printf-friendly format, which
+                         * displays the 'rest' bytes (if any) */
+  u8          op[4],    /* instruction bytes                  */
+              oplen,    /* length of instruction op, the  */
+              modrmlen,
+              modrm,    /* /n digit for some operations       */
+              immlen;   /* number of variable bytes           */
+  u8          jcc;      /* is it a conditional jump instr?    */
+  enum iset   set;
+  enum iflt   flt;
+  enum ialg   alg;
 };
 
 enum {
@@ -144,7 +144,6 @@ enum {
   JP_32,
   JS_32,
 
-#ifdef X86_USE_INT
 # define X86_FIRST ADD_IMM8
   ADD_IMM8,
   ADD_R32,
@@ -212,7 +211,6 @@ enum {
   CMOVZ,
   INC,
   DEC,
-#endif
 
   LEA_8EBP_EAX,
 
@@ -232,10 +230,7 @@ enum {
   SETPO,
   SETS,
 
-#ifdef X86_USE_FLOAT
-#ifndef X86_FIRST
-# define X86_FIRST LEA_8EBP_EAX
-#endif
+  /* start float ops */
   MOV_EAX_14EBP,
   FLD,
   MOV_IMM32_14EBP,
@@ -281,7 +276,6 @@ enum {
   FCMOVNE,
   FCMOVNBE,
   FCMOVNU,
-#endif
 
 #if 0
   /* instructions i have tried to add but have failed for one reason or another */
@@ -290,7 +284,7 @@ enum {
   IDIV_R32,
 #endif
 
-  X86_COUNT /* last, special */
+  X86_CNT /* last, special */
 };
 
 #endif

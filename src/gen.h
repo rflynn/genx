@@ -94,6 +94,7 @@ struct pop {
   } *indiv;
 };
 typedef struct genoscore genoscore;
+typedef struct score_id score_id;
 
 void genoscore_copy(genoscore *dst, const genoscore *src);
 void gen_dump(const genotype *, FILE *);
@@ -160,12 +161,13 @@ struct genx_iface {
 						  algebra_ops:1,
 						  bit_ops:1,
               random_const:1;
+      u32     rnd_max;
 	  } x86;       
   } opt;
 };
 typedef struct genx_iface genx_iface;
 
-void pop_score(struct pop *, const genx_iface *, genoscore *tmp);
+void pop_score(struct pop *, const genoscore *best, const genx_iface *, genoscore *tmp);
 void pop_gen(struct pop *, u32 keep, const genx_iface *);
              
 void genx_iface_dump(const genx_iface *);

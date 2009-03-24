@@ -99,7 +99,7 @@ const const char * disp_modrm(u8 n, const u8 modrm, char *buf, size_t len)
  * @ref #1
  * @ref #2
  */
-const struct x86 X86[X86_COUNT] = {
+const struct x86 X86_[X86_CNT] = {
   /* function op */
   /* descr                        opcode              oplen,modrmlen,modrm,imm */
   { "enter"                   , { 0xc8, 0x00, 0, 0 }, 4, 0, R, 0, 0, I_186, 0,   0   },
@@ -142,7 +142,6 @@ const struct x86 X86[X86_COUNT] = {
   /*
    * integer-related ops
    */
-#ifdef X86_USE_INT
   { "add     0x%02" PRIx8 "," , { 0x83             }, 1, 1, R, 1, 0, I_86,  INT, ALG },
   { "add    "                 , { 0x01             }, 1, 1, R, 0, 0, I_86,  INT, ALG },
   { "imul    0x%02" PRIx8 "," , { 0x6b             }, 1, 1, R, 1, 0, I_86,  INT, ALG },
@@ -209,7 +208,6 @@ const struct x86 X86[X86_COUNT] = {
   { "cmovz  "                 , { 0x0f, 0x44       }, 2, 1, R, 0, 0, I_686, INT, 0   },
   { "inc    "                 , { 0xff             }, 1, 1, 0, 0, 0, I_86,  INT, 0   },
   { "dec    "                 , { 0xff             }, 1, 1, 1, 0, 0, I_86,  INT, 0   },
-#endif
 
   { "lea     0x8(%%ebp), %%eax" ,{ 0x8d, 0x45, 0x08}, 3, 0, R, 0, 0, I_86,  0,   0   },
 
@@ -233,7 +231,6 @@ const struct x86 X86[X86_COUNT] = {
  * x86 floating point operations
  */
 
-#ifdef X86_USE_FLOAT
   { "mov     %%eax, -0x14(%%ebp)",{0x8b, 0x45, 0xce}, 3, 0, R, 0, 0, I_86,  0,   0   },
   { "fld     0x8(%%ebp)"      , { 0xd9, 0x45, 0x08 }, 3, 0, R, 0, 0, I_87,  FLT, 0   },
   { "mov     $0x%08" PRIx32 ", -0x14(%%ebp)",
@@ -285,7 +282,6 @@ const struct x86 X86[X86_COUNT] = {
   { "fcmovne %%st(0),%%st(1)" , { 0xdb, 0xc1       }, 2, 0, R, 0, 0, I_686, FLT, ALG },
   { "fcmovnbe %%st(0),%%st(1)", { 0xdb, 0xd1       }, 2, 0, R, 0, 0, I_686, FLT, ALG },
   { "fcmovnu %%st(0),%%st(1)" , { 0xdb, 0xd9       }, 2, 0, R, 0, 0, I_686, FLT, ALG },
-#endif
 
 };
 
@@ -297,8 +293,8 @@ u8 x86_by_name(const char *descr)
   unsigned i;
   u8 off = X86_NOTFOUND;
   size_t dlen = strlen(descr);
-  for (i = 0; i < sizeof X86 / sizeof X86[0]; i++) {
-    if (0 == strncmp(descr, X86[i].descr, dlen)) {
+  for (i = 0; i < sizeof X86_ / sizeof X86_[0]; i++) {
+    if (0 == strncmp(descr, X86_[i].descr, dlen)) {
       off = (u8)i;
       break;
     }
@@ -306,11 +302,47 @@ u8 x86_by_name(const char *descr)
   return off;
 }
 
-void x86_init(void)
+struct x86 X86[X86_CNT];
+u32 X86_COUNT = 0;
+
+/**
+ * construct a table of instructions from X86_ that match the options in
+ * iface->opt
+ */
+static void build_instr(const genx_iface *iface)
+{
+  u32 i;
+  /*
+   * unconditionally include all special instructions
+   * that appear before X86_FIRST
+   */
+  for (i = 0; i < X86_FIRST; i++) {
+    X86[i] = X86_[i];
+  }
+  X86_COUNT = i;
+  /*
+   * filter instructions by the flags
+   */
+  for (; i < X86_CNT; i++) {
+    if (
+      (INT == X86_[i].flt && !iface->opt.x86.int_ops) ||
+      (FLT == X86_[i].flt && !iface->opt.x86.float_ops) ||
+      (ALG == X86_[i].alg && !iface->opt.x86.algebra_ops) ||
+      (BIT == X86_[i].alg && !iface->opt.x86.bit_ops) ||
+      (X86_[i].immlen     && !iface->opt.x86.random_const)
+    ) {
+      /* doesn't match, skip */
+      continue;
+    }
+    X86[X86_COUNT++] = X86_[i];
+  }
+}
+
+void x86_init(const genx_iface *iface)
 {
   /* double-check instruction enum and table */
-  printf("X86_COUNT=%u (sizeof X86 / sizeof X86[0])=%lu\n",
-    X86_COUNT, (unsigned long)(sizeof X86 / sizeof X86[0]));
+  printf("X86_CNT=%u (sizeof X86 / sizeof X86[0])=%lu\n",
+    X86_CNT, (unsigned long)(sizeof X86 / sizeof X86[0]));
 #if 0
   assert(0 == strncmp("or",      X86[OR_R32]     .descr, 2));
   assert(0 == strncmp("cmpxchg", X86[CMPXCHG_R32].descr, 7));
@@ -319,5 +351,7 @@ void x86_init(void)
   assert(0 == strncmp("cmovne",  X86[CMOVNE]     .descr, 6));
   assert(0 == strncmp("cmovz",   X86[CMOVZ]      .descr, 5));
 #endif
+  build_instr(iface);
+  printf("X86_COUNT=%u\n", X86_COUNT);
 }
 

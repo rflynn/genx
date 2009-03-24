@@ -50,7 +50,7 @@ static const struct {
 static const struct genx_iface Iface = {
   .test.i = {
     .score = SCORE_ALG,
-    .max_const = 0xFFFF,
+    .max_const = 2,
     .init = NULL,
     .func = func,
     .done = done,
@@ -64,14 +64,14 @@ static const struct genx_iface Iface = {
 		.chromo_min     = 1,
 		.chromo_max     = DEFAULT_CHROMO_MAX,
 		.pop_size       = DEFAULT_POP_SIZE,
-		.pop_keep       = 1,
+		.pop_keep       = 3,
 		.gen_deadend    = 0,
     .mutate_rate    = 0.5,
     .x86 = {
 	    .int_ops      = 1,
 		  .float_ops    = 0,
 		  .algebra_ops  = 1,
-		  .bit_ops      = 1,
+		  .bit_ops      = 0,
       .random_const = 1
     }
   }
@@ -87,7 +87,7 @@ EXPORT const struct genx_iface * load(void)
 
 static u32 func(const u32 x[])
 {
-  return (s32)sqrt(x[0]);
+  return (u32)sqrt(x[0]);
 }
 
 static int done(const genoscore *best)
